@@ -6,7 +6,14 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
-/* Hide datalist arrow */
-.no-arrow::-webkit-calendar-picker-indicator {
+
+/* Hide datalist arrow - Aggressive fix */
+input[list]::-webkit-calendar-picker-indicator {
   display: none !important;
+  opacity: 0 !important;
+}
+
+/* Fallback for other browsers if needed */
+datalist {
+  display: none;
 }
