@@ -117,26 +117,9 @@ export const DefendantForm: React.FC<Props> = ({ initialData, onSubmit, onCancel
                 name="movementType"
                 value={formData.movementType}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-justice-500 outline-none no-arrow"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-justice-500 outline-none"
                 placeholder="Ex: Aguardando Sentença, Concluso, etc."
-                list="movement-suggestions"
               />
-              <datalist id="movement-suggestions">
-                <option value="Aguardando Inquérito" />
-                <option value="Denúncia Oferecida" />
-                <option value="Recebida Denúncia" />
-                <option value="Expedido mandado citação" />
-                <option value="Aguardando Defesa Prévia" />
-                <option value="Vista ao MP" />
-                <option value="Aguardando Audiência" />
-                <option value="Concluso para despacho" />
-                <option value="Concluso para decisão" />
-                <option value="Concluso para julgamento" />
-                <option value="Aguardando Sentença" />
-                <option value="Expedição documento" />
-                <option value="Recurso" />
-                <option value="Execução Penal" />
-              </datalist>
             </div>
 
             <div>
