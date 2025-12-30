@@ -264,7 +264,16 @@ export default function App() {
           )}
 
           <button
-            onClick={() => supabase.auth.signOut()}
+            onClick={async () => {
+              try {
+                await supabase.auth.signOut();
+                setSession(null); // Force clear locally
+                // Optional: window.location.reload(); 
+              } catch (error) {
+                console.error("Error signing out:", error);
+                setSession(null); // Fallback force clear
+              }
+            }}
             className="w-full flex items-center justify-center gap-2 p-2 rounded-lg bg-justice-950/50 hover:bg-red-900/50 text-justice-200 hover:text-white transition-colors text-sm"
           >
             <LogOut size={18} />
