@@ -1,6 +1,13 @@
-# Guia de Implantação: GitHub e Vercel
+# Guia de Implantação e Atualização do Banco de Dados
 
-Este projeto foi configurado para ser facilmente hospedado na [Vercel](https://vercel.com) e versionado no [GitHub](https://github.com).
+## Atualização de Banco de Dados (Supabase)
+
+Para suporte às novas funcionalidades (Tipo de Prisão), execute o seguinte comando no SQL Editor do Supabase:
+
+```sql
+alter table defendants 
+add column if not exists prison_type text default 'Preventiva';
+```
 
 ## 1. Enviando para o GitHub
 
