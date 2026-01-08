@@ -12,6 +12,7 @@ const emptyForm: DefendantFormData = {
   name: '',
   caseNumber: '',
   penalType: '',
+  prisonType: 'Preventiva',
   arrestDate: new Date().toISOString().split('T')[0],
   lastReviewDate: new Date().toISOString().split('T')[0],
   movementType: 'Aguardando Sentença',
@@ -83,12 +84,23 @@ export const DefendantForm: React.FC<Props> = ({ initialData, onSubmit, onCancel
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Prisão</label>
+              <select name="prisonType" value={formData.prisonType} onChange={handleChange} className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-justice-500 outline-none bg-white">
+                <option value="Preventiva">Preventiva</option>
+                <option value="Temporária">Temporária</option>
+                <option value="Provisória">Provisória (Execução)</option>
+                <option value="Definitiva">Definitiva</option>
+                <option value="Cível">Cível</option>
+              </select>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Presídio</label>
               <input name="prison" value={formData.prison} onChange={handleChange} className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-justice-500 outline-none" />
             </div>
 
             {/* Datas Críticas */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4">
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
               <h3 className="text-sm font-semibold text-justice-700 uppercase tracking-wider mb-4">Controle de Prazos</h3>
             </div>
 
@@ -107,7 +119,7 @@ export const DefendantForm: React.FC<Props> = ({ initialData, onSubmit, onCancel
             </div>
 
             {/* Movimentação */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4">
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
               <h3 className="text-sm font-semibold text-justice-700 uppercase tracking-wider mb-4">Situação Processual</h3>
             </div>
 
@@ -133,7 +145,7 @@ export const DefendantForm: React.FC<Props> = ({ initialData, onSubmit, onCancel
             </div>
 
             {/* Identificadores e OBS */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4">
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
               <h3 className="text-sm font-semibold text-justice-700 uppercase tracking-wider mb-4">Identificação e Observações</h3>
             </div>
 

@@ -26,12 +26,12 @@ import { calculateDaysDiff, formatDate, getStatusColor, THRESHOLD_IMPRISONMENT, 
 
 import { supabase } from './lib/supabase';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 // Extend jsPDF for autotable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
+    lastAutoTable: { finalY: number };
   }
 }
 
@@ -47,8 +47,12 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // --- NEW STATE FOR TABS (Moved to top to avoid Hook Error) ---
-  const [activeTab, setActiveTab] = useState<'list' | 'dashboard'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'other_regimes' | 'dashboard'>('list');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+
+  // Sorting
+  type SortOption = 'created_desc' | 'review_desc' | 'imprisonment_desc' | 'stalled_desc' | 'name_asc';
+  const [sortBy, setSortBy] = useState<SortOption>('created_desc');
 
   // Court Name Feature (Local Persistence)
   const [courtName, setCourtName] = useState(() => localStorage.getItem('court_name') || 'Vara Única de Goianésia do Pará');
@@ -87,10 +91,12 @@ export default function App() {
       // Map snake_case -> camelCase
       setDefendants(data.map((d: any) => ({
         id: d.id, name: d.name, caseNumber: d.case_number, penalType: d.penal_type,
+        prisonType: d.prison_type || 'Preventiva', // Default if missing
         arrestDate: d.arrest_date, lastReviewDate: d.last_review_date,
         movementType: d.movement_type, lastMovementDate: d.last_movement_date,
         deadline: d.deadline, obs: d.obs, rji: d.rji, bnmp: d.bnmp, infopen: d.infopen,
         prison: d.prison, user_id: d.user_id
+        // date created implicitly handled by order
       })));
     }
     setLoadingData(false);
@@ -107,6 +113,7 @@ export default function App() {
     // Map camelCase -> snake_case
     const payload = {
       name: data.name, case_number: data.caseNumber, penal_type: data.penalType,
+      prison_type: data.prisonType,
       arrest_date: data.arrestDate, last_review_date: data.lastReviewDate,
       movement_type: data.movementType, last_movement_date: data.lastMovementDate,
       deadline: data.deadline, obs: data.obs, rji: data.rji, bnmp: data.bnmp,
@@ -140,11 +147,41 @@ export default function App() {
   };
 
 
+  // Filter logic based on Tabs
+  const filteredDefendants = defendants.filter(d => {
+    const matchesSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase()) || d.caseNumber.includes(searchTerm);
 
-  const filteredDefendants = defendants.filter(d =>
-    d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    d.caseNumber.includes(searchTerm)
-  );
+    // Tab filtering
+    let matchesTab = true;
+    if (activeTab === 'list') {
+      // Default list: Preventiva or Temporária
+      matchesTab = d.prisonType === 'Preventiva' || d.prisonType === 'Temporária' || !d.prisonType;
+    } else if (activeTab === 'other_regimes') {
+      // Other list: Cível, Definitiva, Provisória
+      matchesTab = ['Cível', 'Definitiva', 'Provisória'].includes(d.prisonType);
+    }
+
+    return matchesSearch && matchesTab;
+  });
+
+  const sortedDefendants = useMemo(() => {
+    const sorted = [...filteredDefendants];
+    return sorted.sort((a, b) => {
+      switch (sortBy) {
+        case 'name_asc':
+          return a.name.localeCompare(b.name);
+        case 'review_desc': // Mais tempo sem revisão (Older date first)
+          return new Date(a.lastReviewDate).getTime() - new Date(b.lastReviewDate).getTime();
+        case 'imprisonment_desc': // Maior tempo preso (Older date first)
+          return new Date(a.arrestDate).getTime() - new Date(b.arrestDate).getTime();
+        case 'stalled_desc': // Maior tempo paralisado (Older movement date first)
+          return new Date(a.lastMovementDate).getTime() - new Date(b.lastMovementDate).getTime();
+        case 'created_desc':
+        default:
+          return 0; // Already sorted by fetch (created_at desc)
+      }
+    });
+  }, [filteredDefendants, sortBy]);
 
   // Stats Calculation
   const stats: DashboardStats = useMemo(() => {
@@ -172,42 +209,73 @@ export default function App() {
 
   // Export Functions
   const exportToCSV = () => {
-    const headers = ['Nome', 'Processo', 'Tipo Penal', 'Prisão', 'Revisão', 'Movimentação', 'Data Mov.', 'Prazo', 'Presídio', 'OBS'];
-    const csvContent = [headers.join(','), ...defendants.map(d => [
-      `"${d.name}"`, `"${d.caseNumber}"`, `"${d.penalType}"`, d.arrestDate, d.lastReviewDate,
-      `"${d.movementType}"`, d.lastMovementDate, d.deadline, `"${d.prison}"`, `"${d.obs || ''}"`
-    ].join(','))].join('\n');
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
-    link.download = `relatorio_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+    try {
+      const headers = ['Nome', 'Processo', 'Tipo Penal', 'Prisão', 'Tipo Prisão', 'Revisão', 'Movimentação', 'Data Mov.', 'Prazo', 'Presídio', 'OBS'];
+      const csvContent = [headers.join(','), ...sortedDefendants.map(d => [
+        `"${d.name}"`, `"${d.caseNumber}"`, `"${d.penalType}"`, d.arrestDate, `"${d.prisonType}"`, d.lastReviewDate,
+        `"${d.movementType}"`, d.lastMovementDate, d.deadline, `"${d.prison}"`, `"${d.obs || ''}"`
+      ].join(','))].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `relatorio_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link); // Required for some browsers
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Erro ao exportar CSV:", error);
+      alert("Erro ao exportar CSV. Verifique o console.");
+    }
   };
 
   const generatePDF = () => {
-    const doc = new jsPDF('l', 'mm', 'a4');
-    doc.setFontSize(16); doc.setTextColor(40); doc.text("Relatório de Controle de Réus Presos", 14, 15);
-    doc.setFontSize(10); doc.setTextColor(100); doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} (Cloud) - ${courtName}`, 14, 22);
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4'); // Changed to Portrait ('p')
+      doc.setFontSize(14); doc.setTextColor(40); doc.text(`Relatório - ${activeTab === 'list' ? 'Réus Presos' : 'Outros Regimes'}`, 14, 15);
+      doc.setFontSize(9); doc.setTextColor(100); doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} - ${courtName}`, 14, 21);
 
-    const rows = defendants.map(d => [
-      d.name, d.caseNumber, d.penalType,
-      `${formatDate(d.arrestDate)}\n(${calculateDaysDiff(d.arrestDate)} dias)`,
-      `${formatDate(d.lastReviewDate)}\n(${calculateDaysDiff(d.lastReviewDate)} dias)`,
-      d.movementType, `${d.deadline}d`, d.prison, d.obs || '-'
-    ]);
+      const rows = sortedDefendants.map(d => [
+        d.name,
+        d.caseNumber,
+        `${d.penalType || '-'}\n(${d.prisonType || '-'})`,
+        `${formatDate(d.arrestDate)}\n(${calculateDaysDiff(d.arrestDate)}d)`, // Shortened 'dias' to 'd'
+        `${formatDate(d.lastReviewDate)}\n(${calculateDaysDiff(d.lastReviewDate)}d)`,
+        d.movementType,
+        `${d.deadline}d`,
+        d.prison,
+        d.obs || '-'
+      ]);
 
-    doc.autoTable({
-      head: [["Nome", "Processo", "Tipo Penal", "Prisão", "Revisão", "Movimenta.", "Prazo", "Presídio", "Obs"]],
-      body: rows, startY: 25, theme: 'grid', styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [14, 165, 233], textColor: 255, fontStyle: 'bold' },
-      columnStyles: { 0: { cellWidth: 35 }, 1: { cellWidth: 35 }, 8: { cellWidth: 40 } }
-    });
-    doc.save(`relatorio_${new Date().toISOString().split('T')[0]}.pdf`);
+      autoTable(doc, {
+        head: [["Nome", "Processo", "Tipo/Reg.", "Prisão", "Revisão", "Movim.", "Prz", "Local", "Obs"]],
+        body: rows,
+        startY: 25,
+        theme: 'grid',
+        styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' }, // Reduced font size
+        headStyles: { fillColor: [14, 165, 233], textColor: 255, fontStyle: 'bold', fontSize: 7 },
+        columnStyles: {
+          0: { cellWidth: 25 }, // Name
+          1: { cellWidth: 25 }, // Processo
+          2: { cellWidth: 20 }, // Tipo/Reg
+          3: { cellWidth: 20 }, // Prisão
+          4: { cellWidth: 20 }, // Revisão
+          5: { cellWidth: 20 }, // Movim
+          6: { cellWidth: 10 }, // Prazo
+          7: { cellWidth: 25 }, // Local
+          8: { cellWidth: 'auto' } // Obs
+        }
+      });
+      doc.save(`relatorio_${activeTab}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      alert("Erro ao gerar PDF: " + error);
+    }
   };
 
   if (loadingSession) return <div className="h-screen w-full flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-justice-600"></div></div>;
   if (!session) return <AuthScreen onLogin={setSession} />;
-
-
 
   return (
     <div className="flex font-sans bg-gray-100 min-h-screen">
@@ -233,6 +301,14 @@ export default function App() {
           >
             <List size={22} />
             {isSidebarOpen && <span className="font-medium">Lista de Réus</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('other_regimes')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'other_regimes' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
+          >
+            <Users size={22} /> {/* Using Users, or maybe another icon like FileText */}
+            {isSidebarOpen && <span className="font-medium">Outros Regimes/Cíveis</span>}
           </button>
 
           <button
@@ -360,18 +436,37 @@ export default function App() {
               </div>
             </div>
 
-            {/* SEARCH BAR */}
-            <div className="bg-white rounded-xl shadow-sm p-2 mb-6 border border-gray-200 flex items-center">
-              <div className="p-3 text-gray-400"><Search size={20} /></div>
-              <input
-                type="text"
-                placeholder="Pesquisar por nome, processo, tipo penal..."
-                className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <div className="px-4 text-xs text-gray-400 font-medium border-l border-gray-100">
-                {filteredDefendants.length} REGISTROS
+            {/* SEARCH BAR & FILTER */}
+            <div className="bg-white rounded-xl shadow-sm p-2 mb-6 border border-gray-200 flex flex-col md:flex-row items-center gap-2">
+              <div className="flex-1 flex items-center w-full">
+                <div className="p-3 text-gray-400"><Search size={20} /></div>
+                <input
+                  type="text"
+                  placeholder="Pesquisar por nome, processo, tipo penal..."
+                  className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <div className="hidden md:block h-8 w-px bg-gray-200 mx-2"></div>
+
+              <div className="w-full md:w-auto px-2 md:pr-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="w-full md:w-auto bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-justice-200 focus:border-justice-400"
+                >
+                  <option value="created_desc">Mais Recentes</option>
+                  <option value="review_desc">Sem Revisão (+ tempo)</option>
+                  <option value="imprisonment_desc">Tempo Preso (+ tempo)</option>
+                  <option value="stalled_desc">Sem Movimentação (+ tempo)</option>
+                  <option value="name_asc">Nome (A-Z)</option>
+                </select>
+              </div>
+
+              <div className="px-4 text-xs text-gray-400 font-medium border-l border-gray-100 hidden md:flex items-center">
+                {sortedDefendants.length} REG
               </div>
             </div>
 
@@ -394,10 +489,10 @@ export default function App() {
                   <tbody className="bg-white divide-y divide-gray-100">
                     {loadingData ? (
                       <tr><td colSpan={6} className="py-20 text-center text-gray-500"><div className="animate-spin h-6 w-6 border-2 border-justice-600 border-t-transparent rounded-full mx-auto mb-2"></div>Carregando dados...</td></tr>
-                    ) : filteredDefendants.length === 0 ? (
+                    ) : sortedDefendants.length === 0 ? (
                       <tr><td colSpan={6} className="py-20 text-center text-gray-500">Nenhum registro encontrado.</td></tr>
                     ) : (
-                      filteredDefendants.map((defendant) => {
+                      sortedDefendants.map((defendant) => {
                         const daysImprisoned = calculateDaysDiff(defendant.arrestDate);
                         const daysSinceReview = calculateDaysDiff(defendant.lastReviewDate);
                         const daysStalled = calculateDaysDiff(defendant.lastMovementDate);
