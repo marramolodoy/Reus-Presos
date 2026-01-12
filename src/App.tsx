@@ -274,7 +274,6 @@ export default function App() {
   const generatePDF = () => {
     try {
       const doc = new jsPDF('p', 'mm', 'a4'); // Changed to Portrait ('p')
-      const doc = new jsPDF('p', 'mm', 'a4'); // Changed to Portrait ('p')
       let title = 'Lista Geral';
       if (activeTab === 'preventive') title = 'Preventivos e Temporários';
       if (activeTab === 'home_arrest') title = 'Prisão Domiciliar';
