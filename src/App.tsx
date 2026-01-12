@@ -52,6 +52,20 @@ export default function App() {
   // --- NEW STATE FOR TABS (Moved to top to avoid Hook Error) ---
   const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'provisional_definitive' | 'civil' | 'dashboard'>('preventive');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(true); // Reset to open on desktop by default
+      } else {
+        setSidebarOpen(false); // Close on mobile by default
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Sorting
   type SortOption = 'created_desc' | 'review_desc' | 'imprisonment_desc' | 'stalled_desc' | 'name_asc';
@@ -327,13 +341,26 @@ export default function App() {
   return (
     <div className="flex font-sans bg-gray-100 min-h-screen">
 
+      {/* MOBILE BACKDROP */}
+      {isSidebarOpen && isMobile && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 md:hidden glass-effect"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* SIDEBAR */}
-      <aside className={`bg-justice-900 text-white flex-shrink-0 transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'} fixed h-full z-20 flex flex-col`}>
+      <aside className={`bg-justice-900 text-white flex-shrink-0 transition-all duration-300 fixed h-full z-30 flex flex-col
+        ${isMobile
+          ? (isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64')
+          : (isSidebarOpen ? 'w-64' : 'w-20')
+        }
+      `}>
         <div className="p-4 flex items-center gap-3 border-b border-justice-800 h-16">
           <div className="bg-white/10 p-2 rounded-full flex-shrink-0">
             <Scale size={24} className="text-white" />
           </div>
-          {isSidebarOpen && (
+          {(isSidebarOpen || isMobile) && (
             <div>
               <h1 className="font-bold leading-none tracking-tight text-lg">Controle - Presos</h1>
               <span className="text-[10px] text-justice-300 uppercase tracking-widest font-bold">TJPA</span>
@@ -341,52 +368,52 @@ export default function App() {
           )}
         </div>
 
-        <nav className="flex-1 py-6 px-2 space-y-2">
+        <nav className="flex-1 py-6 px-2 space-y-2 overflow-y-auto">
           <button
-            onClick={() => setActiveTab('preventive')}
+            onClick={() => { setActiveTab('preventive'); if (isMobile) setSidebarOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'preventive' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
           >
-            <List size={22} />
-            {isSidebarOpen && <span className="font-medium">Preventivos</span>}
+            <List size={22} className="flex-shrink-0" />
+            {(isSidebarOpen || isMobile) && <span className="font-medium">Preventivos</span>}
           </button>
 
           <button
-            onClick={() => setActiveTab('home_arrest')}
+            onClick={() => { setActiveTab('home_arrest'); if (isMobile) setSidebarOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'home_arrest' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
           >
-            <Home size={22} />
-            {isSidebarOpen && <span className="font-medium">Domiciliar</span>}
+            <Home size={22} className="flex-shrink-0" />
+            {(isSidebarOpen || isMobile) && <span className="font-medium">Domiciliar</span>}
           </button>
 
           <button
-            onClick={() => setActiveTab('provisional_definitive')}
+            onClick={() => { setActiveTab('provisional_definitive'); if (isMobile) setSidebarOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'provisional_definitive' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
           >
-            <Users size={22} />
-            {isSidebarOpen && <span className="font-medium">Provisório/Definitivo</span>}
+            <Users size={22} className="flex-shrink-0" />
+            {(isSidebarOpen || isMobile) && <span className="font-medium">Provisório/Definitivo</span>}
           </button>
 
           <button
-            onClick={() => setActiveTab('civil')}
+            onClick={() => { setActiveTab('civil'); if (isMobile) setSidebarOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'civil' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
           >
-            <Scale size={22} />
-            {isSidebarOpen && <span className="font-medium">Cíveis</span>}
+            <Scale size={22} className="flex-shrink-0" />
+            {(isSidebarOpen || isMobile) && <span className="font-medium">Cíveis</span>}
           </button>
 
           <button
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => { setActiveTab('dashboard'); if (isMobile) setSidebarOpen(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
           >
-            <LayoutDashboard size={22} />
-            {isSidebarOpen && <span className="font-medium">Painel Gráfico</span>}
+            <LayoutDashboard size={22} className="flex-shrink-0" />
+            {(isSidebarOpen || isMobile) && <span className="font-medium">Painel Gráfico</span>}
           </button>
         </nav>
 
         <div className="p-4 border-t border-justice-800">
-          {isSidebarOpen ? (
+          {(isSidebarOpen || isMobile) ? (
             <div className="flex items-center gap-3 mb-4 px-2">
-              <div className="w-8 h-8 rounded-full bg-justice-700 flex items-center justify-center text-xs font-bold">
+              <div className="w-8 h-8 rounded-full bg-justice-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
                 {session.user.email?.charAt(0).toUpperCase()}
               </div>
               <div className="overflow-hidden">
@@ -406,74 +433,75 @@ export default function App() {
             onClick={async () => {
               try {
                 await supabase.auth.signOut();
-                setSession(null); // Force clear locally
-                // Optional: window.location.reload(); 
+                setSession(null);
               } catch (error) {
                 console.error("Error signing out:", error);
-                setSession(null); // Fallback force clear
+                setSession(null);
               }
             }}
             className="w-full flex items-center justify-center gap-2 p-2 rounded-lg bg-justice-950/50 hover:bg-red-900/50 text-justice-200 hover:text-white transition-colors text-sm"
           >
-            <LogOut size={18} />
-            {isSidebarOpen && <span>Sair do Sistema</span>}
+            <LogOut size={18} className="flex-shrink-0" />
+            {(isSidebarOpen || isMobile) && <span>Sair do Sistema</span>}
           </button>
         </div>
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
+      <main className={`flex-1 flex flex-col min-h-screen transition-all duration-300
+        ${isMobile ? 'ml-0 w-full' : (isSidebarOpen ? 'ml-64' : 'ml-20')}
+      `}>
 
         {/* TOP HEADER */}
-        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6 sticky top-0 z-10 w-full">
+        <header className="bg-white shadow-sm h-16 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 w-full">
           <div className="flex items-center gap-4">
             <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="text-gray-500 hover:text-justice-600">
               <Menu size={24} />
             </button>
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2 cursor-pointer group" onClick={handleEditCourtName}>
+            <h2 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2 cursor-pointer group truncate max-w-[200px] md:max-w-none" onClick={handleEditCourtName}>
               {courtName}
-              <Edit size={14} className="opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity" />
+              <Edit size={14} className="opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity flex-shrink-0" />
             </h2>
           </div>
 
-          <div className="text-sm font-medium text-gray-500">
+          <div className="text-xs md:text-sm font-medium text-gray-500 hidden sm:block">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
         </header>
 
         {activeTab === 'dashboard' ? (
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Painel Gerencial</h2>
-              <p className="text-gray-500">Visualização gráfica e métricas consolidadas</p>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800">Painel Gerencial</h2>
+              <p className="text-gray-500 text-sm">Visualização gráfica e métricas consolidadas</p>
             </div>
             <DashboardCharts defendants={defendants} />
           </div>
         ) : (
           /* LIST VIEW CONTENT */
-          <div className="p-6 fade-in">
-            {/* Sub-header Actions moved here */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+          <div className="p-4 md:p-6 fade-in">
+            {/* Sub-header Actions */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Controle de Processos</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800">Controle de Processos</h2>
                 <p className="text-gray-500 text-sm">Gerencie os réus, prazos e movimentações</p>
               </div>
-              <div className="flex gap-2">
-                <button onClick={exportToCSV} className="text-gray-600 hover:text-emerald-600 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:border-emerald-500 flex items-center gap-2 bg-white transition-all">
-                  <Download size={18} /> CSV
+              <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                <button onClick={exportToCSV} className="flex-1 md:flex-none justify-center text-gray-600 hover:text-emerald-600 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:border-emerald-500 flex items-center gap-2 bg-white transition-all">
+                  <Download size={18} /> <span className="hidden sm:inline">CSV</span>
                 </button>
-                <button onClick={generatePDF} className="text-gray-600 hover:text-red-600 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:border-red-500 flex items-center gap-2 bg-white transition-all">
-                  <FileText size={18} /> PDF
+                <button onClick={generatePDF} className="flex-1 md:flex-none justify-center text-gray-600 hover:text-red-600 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:border-red-500 flex items-center gap-2 bg-white transition-all">
+                  <FileText size={18} /> <span className="hidden sm:inline">PDF</span>
                 </button>
-                <button onClick={() => { setEditingId(null); setIsFormOpen(true); }} className="bg-justice-600 hover:bg-justice-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:shadow-lg flex items-center gap-2 transition-all transform hover:-translate-y-0.5">
+                <button onClick={() => { setEditingId(null); setIsFormOpen(true); }} className="flex-1 md:flex-none justify-center bg-justice-600 hover:bg-justice-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:shadow-lg flex items-center gap-2 transition-all transform hover:-translate-y-0.5 min-w-[120px]">
                   <Plus size={18} /> Novo Réu
                 </button>
               </div>
             </div>
 
             {/* DASHBOARD STATS CARDS (Mini) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              {/* Same cards as before, just slight styling tweak */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {/* Cards layout is already responsive (grid-cols-1 on mobile) */}
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group">
                 <div className="absolute right-0 top-0 h-full w-1 bg-justice-500"></div>
                 <div><p className="text-gray-500 text-xs font-bold uppercase">Total</p><p className="text-3xl font-bold text-gray-800">{stats.total}</p></div>
@@ -501,11 +529,11 @@ export default function App() {
 
             {/* SEARCH BAR & FILTER */}
             <div className="bg-white rounded-xl shadow-sm p-2 mb-6 border border-gray-200 flex flex-col md:flex-row items-center gap-2">
-              <div className="flex-1 flex items-center w-full">
+              <div className="flex-1 flex items-center w-full bg-gray-50 md:bg-transparent rounded-lg md:rounded-none px-2 md:px-0 mb-2 md:mb-0">
                 <div className="p-3 text-gray-400"><Search size={20} /></div>
                 <input
                   type="text"
-                  placeholder="Pesquisar por nome, processo, tipo penal..."
+                  placeholder="Pesquisar..."
                   className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -514,7 +542,7 @@ export default function App() {
 
               <div className="hidden md:block h-8 w-px bg-gray-200 mx-2"></div>
 
-              <div className="w-full md:w-auto px-2 md:pr-2">
+              <div className="w-full md:w-auto px-0 md:px-2 md:pr-2">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -527,34 +555,28 @@ export default function App() {
                   <option value="name_asc">Nome (A-Z)</option>
                 </select>
               </div>
-
-              <div className="px-4 text-xs text-gray-400 font-medium border-l border-gray-100 hidden md:flex items-center">
-                {sortedDefendants.length} REG
-              </div>
             </div>
-
 
             {/* TABLE */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              {/* ... (Existing table code, wrapped) ... */}
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="min-w-[1000px] w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50/50">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Réu / Processo</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Audiência</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Prisão</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Revisão (90d)</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Últ. Movimentação</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-[250px]">Réu / Processo</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-[150px]">Audiência</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-[120px]">Prisão</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-[150px]">Revisão (90d)</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-[200px]">Últ. Movimentação</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Local</th>
-                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Ações</th>
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider w-[120px]">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
                     {loadingData ? (
-                      <tr><td colSpan={6} className="py-20 text-center text-gray-500"><div className="animate-spin h-6 w-6 border-2 border-justice-600 border-t-transparent rounded-full mx-auto mb-2"></div>Carregando dados...</td></tr>
+                      <tr><td colSpan={7} className="py-20 text-center text-gray-500"><div className="animate-spin h-6 w-6 border-2 border-justice-600 border-t-transparent rounded-full mx-auto mb-2"></div>Carregando dados...</td></tr>
                     ) : sortedDefendants.length === 0 ? (
-                      <tr><td colSpan={6} className="py-20 text-center text-gray-500">Nenhum registro encontrado.</td></tr>
+                      <tr><td colSpan={7} className="py-20 text-center text-gray-500">Nenhum registro encontrado.</td></tr>
                     ) : (
                       sortedDefendants.map((defendant) => {
                         const daysImprisoned = calculateDaysDiff(defendant.arrestDate);
