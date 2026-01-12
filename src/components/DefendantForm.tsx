@@ -185,10 +185,20 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
                   <input
                     type="datetime-local"
                     name="hearingDate"
-                    value={formData.hearingDate ? new Date(formData.hearingDate).toISOString().slice(0, 16) : ''}
+                    value={formData.hearingDate ? (() => {
+                      // Converte UTC para Local input format
+                      const date = new Date(formData.hearingDate);
+                      const offset = date.getTimezoneOffset() * 60000;
+                      const localDate = new Date(date.getTime() - offset);
+                      return localDate.toISOString().slice(0, 16);
+                    })() : ''}
                     onChange={(e) => {
-                      // Ajuste manual para timestamp com timezone se necessário, ou apenas string ISO
-                      setFormData(prev => ({ ...prev, hearingDate: e.target.value ? new Date(e.target.value).toISOString() : '' }))
+                      // Local input -> UTC
+                      const val = e.target.value;
+                      setFormData(prev => ({
+                        ...prev,
+                        hearingDate: val ? new Date(val).toISOString() : ''
+                      }));
                     }}
                     className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-justice-500 outline-none"
                   />
