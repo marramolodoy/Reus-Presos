@@ -16,7 +16,10 @@ import {
   Info,
   LayoutDashboard,
   List,
-  Menu
+  Menu,
+  Home,
+  Link as LinkIcon,
+  CalendarDays
 } from 'lucide-react';
 import { Defendant, DefendantFormData, DashboardStats } from './types';
 import { DefendantForm } from './components/DefendantForm';
@@ -47,7 +50,7 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // --- NEW STATE FOR TABS (Moved to top to avoid Hook Error) ---
-  const [activeTab, setActiveTab] = useState<'list' | 'other_regimes' | 'dashboard'>('list');
+  const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'provisional_definitive' | 'civil' | 'dashboard'>('preventive');
   const [isSidebarOpen, setSidebarOpen] = useState(true);
 
   // Sorting
@@ -95,7 +98,8 @@ export default function App() {
         arrestDate: d.arrest_date, lastReviewDate: d.last_review_date,
         movementType: d.movement_type, lastMovementDate: d.last_movement_date,
         deadline: d.deadline, obs: d.obs, rji: d.rji, bnmp: d.bnmp, infopen: d.infopen,
-        prison: d.prison, user_id: d.user_id
+        prison: d.prison, user_id: d.user_id,
+        hasHearing: d.has_hearing, hearingDate: d.hearing_date, linkedDefendantIds: d.linked_defendant_ids
         // date created implicitly handled by order
       })));
     }
@@ -117,7 +121,8 @@ export default function App() {
       arrest_date: data.arrestDate, last_review_date: data.lastReviewDate,
       movement_type: data.movementType, last_movement_date: data.lastMovementDate,
       deadline: data.deadline, obs: data.obs, rji: data.rji, bnmp: data.bnmp,
-      infopen: data.infopen, prison: data.prison, user_id: session.user.id
+      infopen: data.infopen, prison: data.prison, user_id: session.user.id,
+      has_hearing: data.hasHearing, hearing_date: data.hearingDate, linked_defendant_ids: data.linkedDefendantIds
     };
 
     if (editingId) {
@@ -153,12 +158,15 @@ export default function App() {
 
     // Tab filtering
     let matchesTab = true;
-    if (activeTab === 'list') {
+    if (activeTab === 'preventive') {
       // Default list: Preventiva or Temporária
       matchesTab = d.prisonType === 'Preventiva' || d.prisonType === 'Temporária' || !d.prisonType;
-    } else if (activeTab === 'other_regimes') {
-      // Other list: Cível, Definitiva, Provisória
-      matchesTab = ['Cível', 'Definitiva', 'Provisória'].includes(d.prisonType);
+    } else if (activeTab === 'home_arrest') {
+      matchesTab = d.prisonType === 'Domiciliar';
+    } else if (activeTab === 'provisional_definitive') {
+      matchesTab = d.prisonType === 'Provisória' || d.prisonType === 'Definitiva';
+    } else if (activeTab === 'civil') {
+      matchesTab = d.prisonType === 'Cível';
     }
 
     return matchesSearch && matchesTab;
@@ -208,20 +216,53 @@ export default function App() {
   }, [defendants]);
 
   // Export Functions
+  // Export Functions
   const exportToCSV = () => {
     try {
-      const headers = ['Nome', 'Processo', 'Tipo Penal', 'Prisão', 'Tipo Prisão', 'Revisão', 'Movimentação', 'Data Mov.', 'Prazo', 'Presídio', 'OBS'];
-      const csvContent = [headers.join(','), ...sortedDefendants.map(d => [
-        `"${d.name}"`, `"${d.caseNumber}"`, `"${d.penalType}"`, d.arrestDate, `"${d.prisonType}"`, d.lastReviewDate,
-        `"${d.movementType}"`, d.lastMovementDate, d.deadline, `"${d.prison}"`, `"${d.obs || ''}"`
-      ].join(','))].join('\n');
+      const headers = [
+        'Nome', 'Processo', 'Tipo Penal', 'Prisão', 'Tipo Prisão',
+        'Revisão', 'Movimentação', 'Data Mov.', 'Prazo',
+        'Presídio', 'Tem Audiência?', 'Data Audiência', 'OBS'
+      ];
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const escapeCsvField = (field: any) => {
+        if (field === null || field === undefined) return '';
+        const stringField = String(field);
+        // Se tiver aspas, ponto e vírgula ou quebra de linha, envolve em aspas e duplica aspas internas
+        if (stringField.includes('"') || stringField.includes(';') || stringField.includes('\n')) {
+          return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+      };
+
+      const rows = sortedDefendants.map(d => [
+        d.name,
+        d.caseNumber,
+        d.penalType,
+        formatDate(d.arrestDate),
+        d.prisonType,
+        formatDate(d.lastReviewDate),
+        d.movementType,
+        formatDate(d.lastMovementDate),
+        d.deadline,
+        d.prison,
+        d.hasHearing ? 'Sim' : 'Não',
+        d.hearingDate ? new Date(d.hearingDate).toLocaleString('pt-BR') : '-',
+        d.obs || ''
+      ]);
+
+      const csvContent = [
+        headers.join(';'),
+        ...rows.map(row => row.map(escapeCsvField).join(';'))
+      ].join('\n');
+
+      // Adiciona BOM (\uFEFF) para forçar Excel a reconhecer UTF-8
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
       link.setAttribute("download", `relatorio_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link); // Required for some browsers
+      document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (error) {
@@ -233,7 +274,14 @@ export default function App() {
   const generatePDF = () => {
     try {
       const doc = new jsPDF('p', 'mm', 'a4'); // Changed to Portrait ('p')
-      doc.setFontSize(14); doc.setTextColor(40); doc.text(`Relatório - ${activeTab === 'list' ? 'Réus Presos' : 'Outros Regimes'}`, 14, 15);
+      const doc = new jsPDF('p', 'mm', 'a4'); // Changed to Portrait ('p')
+      let title = 'Lista Geral';
+      if (activeTab === 'preventive') title = 'Preventivos e Temporários';
+      if (activeTab === 'home_arrest') title = 'Prisão Domiciliar';
+      if (activeTab === 'provisional_definitive') title = 'Provisórios e Definitivos';
+      if (activeTab === 'civil') title = 'Prisão Cível';
+
+      doc.setFontSize(14); doc.setTextColor(40); doc.text(`Relatório - ${title}`, 14, 15);
       doc.setFontSize(9); doc.setTextColor(100); doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} - ${courtName}`, 14, 21);
 
       const rows = sortedDefendants.map(d => [
@@ -296,19 +344,35 @@ export default function App() {
 
         <nav className="flex-1 py-6 px-2 space-y-2">
           <button
-            onClick={() => setActiveTab('list')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'list' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
+            onClick={() => setActiveTab('preventive')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'preventive' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
           >
             <List size={22} />
-            {isSidebarOpen && <span className="font-medium">Lista de Réus</span>}
+            {isSidebarOpen && <span className="font-medium">Preventivos</span>}
           </button>
 
           <button
-            onClick={() => setActiveTab('other_regimes')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'other_regimes' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
+            onClick={() => setActiveTab('home_arrest')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'home_arrest' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
           >
-            <Users size={22} /> {/* Using Users, or maybe another icon like FileText */}
-            {isSidebarOpen && <span className="font-medium">Outros Regimes/Cíveis</span>}
+            <Home size={22} />
+            {isSidebarOpen && <span className="font-medium">Domiciliar</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('provisional_definitive')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'provisional_definitive' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
+          >
+            <Users size={22} />
+            {isSidebarOpen && <span className="font-medium">Provisório/Definitivo</span>}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('civil')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'civil' ? 'bg-justice-700 text-white shadow-lg' : 'text-justice-200 hover:bg-justice-800 hover:text-white'}`}
+          >
+            <Scale size={22} />
+            {isSidebarOpen && <span className="font-medium">Cíveis</span>}
           </button>
 
           <button
@@ -479,6 +543,7 @@ export default function App() {
                   <thead className="bg-gray-50/50">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Réu / Processo</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Audiência</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Prisão</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Revisão (90d)</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Últ. Movimentação</th>
@@ -502,12 +567,38 @@ export default function App() {
                           <tr key={defendant.id} className="hover:bg-blue-50/50 transition-colors group">
                             <td className="px-6 py-4">
                               <div className="flex flex-col">
-                                <span className="font-bold text-gray-900">{defendant.name}</span>
+                                <span className="font-bold text-gray-900 flex items-center gap-2">
+                                  {defendant.name}
+                                  {defendant.linkedDefendantIds && defendant.linkedDefendantIds.length > 0 && (
+                                    <span className="text-blue-500" title="Possui vínculo com outro preso"><LinkIcon size={14} /></span>
+                                  )}
+                                </span>
                                 <span className="text-xs text-gray-500 font-mono mt-0.5">{defendant.caseNumber}</span>
                                 <span className="inline-flex mt-1 items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-800 w-fit">
                                   {defendant.penalType}
                                 </span>
                               </div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                              {defendant.hasHearing && defendant.hearingDate ? (
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-justice-700 flex items-center gap-1">
+                                    <CalendarDays size={14} />
+                                    {new Date(defendant.hearingDate).toLocaleDateString('pt-BR')}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(defendant.hearingDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                  <span className={`text-xs font-bold mt-1 ${calculateDaysDiff(defendant.hearingDate) < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {calculateDaysDiff(defendant.hearingDate) < 0
+                                      ? `Faltam ${Math.abs(calculateDaysDiff(defendant.hearingDate))} dias`
+                                      : 'Realizada/Passou'}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400">-</span>
+                              )}
                             </td>
 
                             <td className="px-6 py-4">
@@ -579,6 +670,7 @@ export default function App() {
       {isFormOpen && (
         <DefendantForm
           initialData={editingId ? defendants.find(d => d.id === editingId) : undefined}
+          defendants={defendants} // Passar lista completa para linkagem
           onSubmit={handleSave}
           onCancel={() => { setIsFormOpen(false); setEditingId(null); }}
         />
