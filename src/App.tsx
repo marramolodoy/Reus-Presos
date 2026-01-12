@@ -25,7 +25,7 @@ import { Defendant, DefendantFormData, DashboardStats } from './types';
 import { DefendantForm } from './components/DefendantForm';
 import { AuthScreen } from './components/AuthScreen';
 import { DashboardCharts } from './components/DashboardCharts';
-import { calculateDaysDiff, formatDate, getStatusColor, THRESHOLD_IMPRISONMENT, THRESHOLD_REVIEW } from './utils';
+import { calculateDaysDiff, calculateDaysUntil, formatDate, getStatusColor, THRESHOLD_IMPRISONMENT, THRESHOLD_REVIEW } from './utils';
 
 import { supabase } from './lib/supabase';
 import { jsPDF } from 'jspdf';
@@ -589,9 +589,9 @@ export default function App() {
                                   <span className="text-xs text-gray-500">
                                     {new Date(defendant.hearingDate).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                   </span>
-                                  <span className={`text-xs font-bold mt-1 ${calculateDaysDiff(defendant.hearingDate) < 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {calculateDaysDiff(defendant.hearingDate) < 0
-                                      ? `Faltam ${Math.abs(calculateDaysDiff(defendant.hearingDate))} dias`
+                                  <span className={`text-xs font-bold mt-1 ${calculateDaysUntil(defendant.hearingDate) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {calculateDaysUntil(defendant.hearingDate) > 0
+                                      ? `Faltam ${calculateDaysUntil(defendant.hearingDate)} dias`
                                       : 'Realizada/Passou'}
                                   </span>
                                 </div>

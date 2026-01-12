@@ -3,8 +3,16 @@ export const calculateDaysDiff = (dateString: string): number => {
   const start = new Date(dateString);
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - start.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
+};
+
+export const calculateDaysUntil = (dateString: string): number => {
+  if (!dateString) return 0;
+  const target = new Date(dateString);
+  const now = new Date();
+  const diffTime = target.getTime() - now.getTime(); // Positive if future
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
 export const formatDate = (dateString: string): string => {
