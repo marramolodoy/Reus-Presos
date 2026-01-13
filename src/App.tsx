@@ -136,7 +136,7 @@ export default function App() {
       movement_type: data.movementType, last_movement_date: data.lastMovementDate,
       deadline: data.deadline, obs: data.obs, rji: data.rji, bnmp: data.bnmp,
       infopen: data.infopen, prison: data.prison, user_id: session.user.id,
-      has_hearing: data.hasHearing, hearing_date: data.hearingDate, linked_defendant_ids: data.linkedDefendantIds
+      has_hearing: data.hasHearing, hearing_date: data.hearingDate || null, linked_defendant_ids: data.linkedDefendantIds
     };
 
     if (editingId) {
