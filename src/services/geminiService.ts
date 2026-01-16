@@ -39,7 +39,15 @@ export const generateLegalAnalysis = async (defendant: Defendant): Promise<strin
     });
 
     // Handling response structure carefully
-    return response.response.text() || "Não foi possível gerar a análise no momento.";
+    const result = response as any;
+    if (typeof result.text === 'function') {
+      return result.text();
+    }
+    if (result.response && typeof result.response.text === 'function') {
+      return result.response.text();
+    }
+
+    return result?.candidates?.[0]?.content?.parts?.[0]?.text || "Não foi possível gerar a análise no momento.";
 
   } catch (error: any) {
     console.error("Erro ao consultar Gemini:", error);

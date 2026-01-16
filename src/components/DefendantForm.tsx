@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Defendant, DefendantFormData } from '../types';
-import { X, Save } from 'lucide-react';
+
+import { X, Save, Search, Link as LinkIcon } from 'lucide-react';
 
 interface Props {
   initialData?: Defendant;
@@ -16,14 +17,14 @@ const emptyForm: DefendantFormData = {
   prisonType: 'Preventiva',
   arrestDate: new Date().toISOString().split('T')[0],
   lastReviewDate: new Date().toISOString().split('T')[0],
-  movementType: 'Aguardando Sentença',
+  movementType: '',
   lastMovementDate: new Date().toISOString().split('T')[0],
   deadline: 30,
   obs: '',
   rji: '',
   bnmp: '',
   infopen: '',
-  prison: 'Cadeia Pública de Goianésia',
+  prison: '',
   hasHearing: false,
   hearingDate: '',
   linkedDefendantIds: []
@@ -31,6 +32,7 @@ const emptyForm: DefendantFormData = {
 
 export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], onSubmit, onCancel }) => {
   const [formData, setFormData] = useState<DefendantFormData>(emptyForm);
+  const [linkSearchTerm, setLinkSearchTerm] = useState('');
 
   useEffect(() => {
     if (initialData) {
@@ -208,20 +210,80 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Linkar com outro(s) Preso(s)</label>
-              <select
-                multiple
-                name="linkedDefendantIds"
-                value={formData.linkedDefendantIds || []}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-justice-500 outline-none h-32 bg-white"
-              >
-                {defendants
-                  .filter(d => d.id !== initialData?.id) // Não mostrar a si mesmo
-                  .map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-              </select>
-              <p className="text-[10px] text-gray-500 mt-1">Segure Ctrl para selecionar múltiplos</p>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                {/* Selected Chips */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {formData.linkedDefendantIds && formData.linkedDefendantIds.map(linkId => {
+                    const linkedDef = defendants.find(d => d.id === linkId);
+                    if (!linkedDef) return null;
+                    return (
+                      <span key={linkId} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1">
+                        {linkedDef.name}
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({
+                            ...prev,
+                            linkedDefendantIds: prev.linkedDefendantIds?.filter(id => id !== linkId)
+                          }))}
+                          className="text-blue-600 hover:text-blue-900 focus:outline-none"
+                        >
+                          <X size={14} />
+                        </button>
+                      </span>
+                    );
+                  })}
+                  {(!formData.linkedDefendantIds || formData.linkedDefendantIds.length === 0) && (
+                    <span className="text-xs text-gray-400 italic py-1">Nenhum processo vinculado.</span>
+                  )}
+                </div>
+
+                {/* Search & List */}
+                <div className="relative">
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2.5 top-2.5 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Buscar réu para vincular..."
+                      value={linkSearchTerm}
+                      onChange={(e) => setLinkSearchTerm(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-justice-200 outline-none"
+                    />
+                  </div>
+
+                  {linkSearchTerm && (
+                    <div className="border border-gray-200 rounded bg-white max-h-40 overflow-y-auto shadow-sm">
+                      {defendants
+                        .filter(d =>
+                          d.id !== initialData?.id && // Not self
+                          !formData.linkedDefendantIds?.includes(d.id) && // Not already linked
+                          d.name.toLowerCase().includes(linkSearchTerm.toLowerCase()) // Matches search
+                        )
+                        .map(d => (
+                          <button
+                            key={d.id}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                linkedDefendantIds: [...(prev.linkedDefendantIds || []), d.id]
+                              }));
+                              setLinkSearchTerm(''); // Clear search after adding
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 text-gray-700 border-b border-gray-50 last:border-0 flex items-center justify-between group"
+                          >
+                            <span>{d.name}</span>
+                            <span className="opacity-0 group-hover:opacity-100 text-blue-600"><LinkIcon size={14} /> Linkar</span>
+                          </button>
+                        ))
+                      }
+                      {defendants.filter(d => d.id !== initialData?.id && !formData.linkedDefendantIds?.includes(d.id) && d.name.toLowerCase().includes(linkSearchTerm.toLowerCase())).length === 0 && (
+                        <div className="p-3 text-xs text-gray-400 text-center">Nenhum réu encontrado.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Identificadores e OBS */}

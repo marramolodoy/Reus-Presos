@@ -14,4 +14,60 @@ ALTER TABLE defendants ADD COLUMN IF NOT EXISTS linked_defendant_ids TEXT[] DEFA
 -- 4. Opcional: Indexar hearing_date se for usar para queries frequentes, mas não é crítico agora.
 -- CREATE INDEX IF NOT EXISTS idx_defendants_hearing_date ON defendants(hearing_date);
 
+-- 5. Adiciona coluna para indicar Competência Delegada (Cível - RPV/Precatório)
+ALTER TABLE civil_cases ADD COLUMN IF NOT EXISTS is_delegated BOOLEAN DEFAULT FALSE;
+
+-- 6. Adiciona coluna para Status de Expedição (Pendente/Expedido)
+ALTER TABLE civil_cases ADD COLUMN IF NOT EXISTS expedition_status TEXT DEFAULT 'pending';
+ALTER TABLE civil_cases ADD COLUMN IF NOT EXISTS last_movement_date DATE;
+ALTER TABLE civil_cases ADD COLUMN IF NOT EXISTS last_reevaluation_date DATE;
+
+-- 7. Tabela de Documentos Administrativos
+CREATE TABLE IF NOT EXISTS administrative_documents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    number TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    date DATE NOT NULL,
+    issuer TEXT CHECK (issuer IN ('Secretaria', 'Gabinete')) NOT NULL,
+    file_path TEXT,
+    document_type TEXT, -- Novo campo
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    deleted_at TIMESTAMP WITH TIME ZONE, -- Soft Delete
+    user_id UUID REFERENCES auth.users(id)
+);
+
+ALTER TABLE administrative_documents ADD COLUMN IF NOT EXISTS document_type TEXT;
+ALTER TABLE administrative_documents ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+
+-- 8. Tabela de Cartas Precatórias
+CREATE TABLE IF NOT EXISTS rogatory_letters (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    case_number TEXT NOT NULL,
+    defendant_name TEXT NOT NULL,
+    origin_court TEXT NOT NULL,
+    type TEXT CHECK (type IN ('civil', 'criminal')) NOT NULL,
+    received_date DATE NOT NULL,
+    deadline_date DATE,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'returned')),
+    obs TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    user_id UUID REFERENCES auth.users(id)
+);
+
+-- NOTA: Você precisará criar um Bucket no Supabase Storage chamado 'documents' e configurar as políticas de acesso (RLS).
+
+-- 9. Adiciona coluna de Soft Delete para Casos Cíveis
+ALTER TABLE civil_cases ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+
+-- 10. Melhorias Carta Precatória (Campos Adicionais)
+ALTER TABLE rogatory_letters ADD COLUMN IF NOT EXISTS purpose TEXT;
+ALTER TABLE rogatory_letters ADD COLUMN IF NOT EXISTS has_hearing BOOLEAN DEFAULT FALSE;
+ALTER TABLE rogatory_letters ADD COLUMN IF NOT EXISTS is_prisoner BOOLEAN DEFAULT FALSE;
+ALTER TABLE rogatory_letters ADD COLUMN IF NOT EXISTS hearing_date TIMESTAMP WITH TIME ZONE;
+ALTER TABLE rogatory_letters ADD COLUMN IF NOT EXISTS direction TEXT DEFAULT 'incoming' CHECK (direction IN ('incoming', 'outgoing'));
+
+-- 11. Adiciona coluna de Soft Delete para Mural de Avisos (Sticky Notes)
+ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
+
 -- Fim da migração
