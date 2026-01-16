@@ -109,4 +109,54 @@ CREATE POLICY "Users can delete their own SEI requests"
 ON sei_requests FOR DELETE
 USING (auth.uid() = user_id);
 
+-- 13. RLS para Cartas Precatórias
+-- Enable RLS for Rogatory Letters
+ALTER TABLE rogatory_letters ENABLE ROW LEVEL SECURITY;
+
+-- Create Policies for Rogatory Letters
+CREATE POLICY "Users can view their own rogatory letters"
+ON rogatory_letters FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own rogatory letters"
+ON rogatory_letters FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own rogatory letters"
+ON rogatory_letters FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own rogatory letters"
+ON rogatory_letters FOR DELETE
+USING (auth.uid() = user_id);
+
+-- 14. Segurança do Storage (Documentos)
+-- Make bucket private (Note: Se falhar por permissão, use o Painel > Storage > Settings)
+-- UPDATE storage.buckets SET public = false WHERE id = 'documents'; -- Comentado para evitar erro 42501 se não for owner
+
+-- Create Policy: View Own Files
+-- Nota: O RLS já está ativo na tabela storage.objects. Apenas criamos as políticas.
+CREATE POLICY "Users can view own files"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text );
+
+-- Create Policy: Upload Own Files
+CREATE POLICY "Users can upload own files"
+ON storage.objects FOR INSERT
+WITH CHECK ( bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text );
+
+-- Create Policy: Update Own Files
+CREATE POLICY "Users can update own files"
+ON storage.objects FOR UPDATE
+USING ( bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text );
+
+-- Create Policy: Delete Own Files
+CREATE POLICY "Users can delete own files"
+ON storage.objects FOR DELETE
+USING ( bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text );
+
+-- 15. Limpeza de Políticas Antigas (Segurança)
+DROP POLICY IF EXISTS "Auth Upload" ON storage.objects;
+DROP POLICY IF EXISTS "Auth Delete" ON storage.objects;
+
 -- Fim da migração

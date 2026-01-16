@@ -329,7 +329,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
-                                                            console.log('Edit clicked for', d.id); // Debug
+
                                                             handleEdit(d);
                                                         }}
                                                         className="text-blue-600 hover:bg-blue-50 p-1 rounded cursor-pointer"
@@ -341,7 +341,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                                         onClick={(e) => {
                                                             e.preventDefault();
                                                             e.stopPropagation();
-                                                            console.log('Delete clicked for', d.id); // Debug
+
                                                             handleDelete(d.id);
                                                         }}
                                                         className="text-red-600 hover:bg-red-50 p-1 rounded cursor-pointer"
