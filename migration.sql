@@ -70,4 +70,43 @@ ALTER TABLE rogatory_letters ADD COLUMN IF NOT EXISTS direction TEXT DEFAULT 'in
 -- 11. Adiciona coluna de Soft Delete para Mural de Avisos (Sticky Notes)
 ALTER TABLE sticky_notes ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
 
+-- 12. RLS (Row Level Security) para Isolamento de Dados
+-- Enable RLS
+ALTER TABLE administrative_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sei_requests ENABLE ROW LEVEL SECURITY;
+
+-- Create Policies for Administrative Documents
+CREATE POLICY "Users can view their own administrative documents"
+ON administrative_documents FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own administrative documents"
+ON administrative_documents FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own administrative documents"
+ON administrative_documents FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own administrative documents"
+ON administrative_documents FOR DELETE
+USING (auth.uid() = user_id);
+
+-- Create Policies for SEI Requests
+CREATE POLICY "Users can view their own SEI requests"
+ON sei_requests FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own SEI requests"
+ON sei_requests FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own SEI requests"
+ON sei_requests FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own SEI requests"
+ON sei_requests FOR DELETE
+USING (auth.uid() = user_id);
+
 -- Fim da migração
