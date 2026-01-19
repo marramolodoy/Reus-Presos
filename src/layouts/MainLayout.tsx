@@ -10,8 +10,8 @@ interface MainLayoutProps {
     appTitle: string;
     appSubtitle: string;
     onEditAppDetails: () => void;
-    activeModule: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory';
-    onModuleChange: (module: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory') => void;
+    activeModule: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer';
+    onModuleChange: (module: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer') => void;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
@@ -45,6 +45,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     const navItems = [
         { id: 'criminal', label: 'Criminal', icon: Gavel },
         { id: 'civil', label: 'Cível & Menores', icon: Scale },
+        { id: 'lawyer', label: 'Req. Advogados', icon: UserCog },
         { id: 'notes', label: 'Avisos / Mural', icon: StickyNote },
         { id: 'admin', label: 'Administrativo', icon: FileText },
         { id: 'rogatory', label: 'Carta Precatória', icon: UserCog }, // Using UserCog as placeholder

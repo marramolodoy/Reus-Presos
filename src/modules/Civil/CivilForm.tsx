@@ -18,13 +18,20 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
         name: '',
         caseNumber: '',
         category: defaultCategory || 'Urgentes',
-        entryDate: new Date().toISOString().split('T')[0],
+        entryDate: (() => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        })(),
         lastMovementDate: '',
         lastReevaluationDate: '',
         deadlineDate: '',
         obs: '',
         isDelegated: false,
-        expeditionStatus: undefined
+        expeditionStatus: undefined,
+        responsibleServer: ''
     });
 
     useEffect(() => {
@@ -40,6 +47,7 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
                 obs: initialData.obs || '',
                 isDelegated: initialData.isDelegated || false,
                 expeditionStatus: initialData.expeditionStatus,
+                responsibleServer: initialData.responsibleServer || '',
             });
         }
     }, [initialData]);
@@ -70,7 +78,7 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
     };
 
     return (
-        <form onSubmit={handleSubmit} className="p-6 bg-white rounded-lg w-full max-w-2xl mx-auto shadow-sm">
+        <form onSubmit={handleSubmit} className="p-6 bg-white rounded-lg w-full max-w-2xl mx-auto shadow-sm max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 className="text-2xl font-bold text-gray-800">
                     {initialData ? 'Editar Processo Cível' : 'Novo Processo Cível'}
@@ -220,6 +228,18 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
                         className={`w-full p-2 border rounded focus:ring-2 focus:ring-justice-500 outline-none ${(formData.category === 'Infracionais' || formData.category === 'Apreendidos') ? 'bg-gray-50 border-gray-200' : ''}`}
                         value={formData.deadlineDate}
                         onChange={e => setFormData({ ...formData, deadlineDate: e.target.value })}
+                    />
+                </div>
+
+                {/* Servidor Responsável */}
+                <div className="col-span-2 md:col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Servidor Responsável</label>
+                    <input
+                        type="text"
+                        className="w-full p-2 border rounded focus:ring-2 focus:ring-justice-500 outline-none"
+                        value={formData.responsibleServer || ''}
+                        onChange={e => setFormData({ ...formData, responsibleServer: e.target.value })}
+                        placeholder="Nome do servidor"
                     />
                 </div>
 

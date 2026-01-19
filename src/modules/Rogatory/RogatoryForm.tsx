@@ -19,7 +19,14 @@ export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, 
         defendantName: initialData?.defendantName || '',
         originCourt: initialData?.originCourt || '',
         type: initialData?.type || 'criminal',
-        receivedDate: initialData?.receivedDate || new Date().toISOString().split('T')[0],
+        receivedDate: initialData?.receivedDate || (() => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        })(),
+
         deadlineDate: initialData?.deadlineDate || '',
         status: initialData?.status || 'pending',
         obs: initialData?.obs || '',

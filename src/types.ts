@@ -47,6 +47,9 @@ export interface CivilCase {
   lastReevaluationDate?: string;
   deadlineDate?: string;
   obs?: string;
+  isConcluded?: boolean;
+  concludedAt?: string | null;
+  responsibleServer?: string;
   user_id: string;
   deletedAt?: string | null;
 }
@@ -96,3 +99,19 @@ export interface SeiRequest {
 }
 
 export type CivilCaseFormData = Omit<CivilCase, 'id' | 'user_id'>;
+
+export interface LawyerRequest {
+  id: string;
+  name: string; // Nome do Advogado / Parte
+  caseNumber: string; // Processo (Opcional)
+  contactMethod: 'WhatsApp' | 'Email' | 'Telefone' | 'Presencial' | 'Balcão Virtual' | 'Outros';
+  matter: 'Cível' | 'Criminal' | 'Outros';
+  requestDate: string;
+  isConcluded: boolean;
+  concludedAt?: string | null;
+  obs?: string;
+  user_id: string;
+  deletedAt?: string | null;
+}
+
+export type LawyerRequestFormData = Omit<LawyerRequest, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'deletedAt'>;

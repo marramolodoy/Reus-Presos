@@ -1,6 +1,5 @@
 export const CIVIL_CATEGORIES = [
     'Urgentes',
-    'Advogados',
     'Acolhidos',
     'Apreendidos',
     'Infracionais',
