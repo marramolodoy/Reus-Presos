@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Edit, Trash, Download, FileText, ArchiveRestore } from 'lucide-react';
+import { Plus, Search, Edit, Trash, Download, FileText, ArchiveRestore, CheckCircle, Clock, User } from 'lucide-react';
 import { CivilCase, CivilCaseFormData } from '../../types';
 import { CivilForm } from './CivilForm';
 import { supabase } from '../../lib/supabase';
@@ -27,6 +27,7 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isTrashOpen, setIsTrashOpen] = useState(false);
     const [sortBy, setSortBy] = useState('entry_desc');
+    const [showConcluded, setShowConcluded] = useState(false);
 
     const fetchCases = async () => {
         if (!session) return;
@@ -52,6 +53,9 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                 obs: d.obs,
                 isDelegated: d.is_delegated,
                 expeditionStatus: d.expedition_status,
+                isConcluded: d.is_concluded,
+                concludedAt: d.concluded_at,
+                responsibleServer: d.responsible_server,
                 user_id: d.user_id,
                 deletedAt: d.deleted_at
             })));
@@ -76,6 +80,9 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
             obs: data.obs,
             is_delegated: data.isDelegated,
             expedition_status: data.expeditionStatus,
+            is_concluded: data.isConcluded,
+            concluded_at: data.concludedAt,
+            responsible_server: data.responsibleServer,
             user_id: session.user.id
         };
 
@@ -103,12 +110,43 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
         }
     };
 
+    const handleToggleConclusion = async (c: CivilCase) => {
+        const newStatus = !c.isConcluded;
+        const { error } = await supabase
+            .from('civil_cases')
+            .update({
+                is_concluded: newStatus,
+                concluded_at: newStatus ? new Date().toISOString() : null
+            })
+            .eq('id', c.id);
+
+        if (error) alert('Erro ao atualizar status: ' + error.message);
+        else await fetchCases();
+    };
+
+    const stats = useMemo(() => {
+        const categoryCases = cases.filter(c => c.category === activeCategory);
+        const total = categoryCases.length;
+        const concluded = categoryCases.filter(c => c.isConcluded).length;
+        const pending = total - concluded;
+        return { total, concluded, pending };
+    }, [cases, activeCategory]);
+
     const filteredCases = useMemo(() => {
         const filtered = cases.filter(c => {
             const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 c.caseNumber.includes(searchTerm);
             const matchesCategory = c.category === activeCategory;
-            return matchesSearch && matchesCategory;
+
+            // Filter by showConcluded logic
+            // If showConcluded is true -> show ONLY concluded? Or show ALL? 
+            // In Lawyer tab, I made it filter either pending OR concluded. 
+            // "permitir filtrar a quantidade de pedidos concluídos"
+            if (showConcluded) {
+                return matchesSearch && matchesCategory && c.isConcluded;
+            } else {
+                return matchesSearch && matchesCategory && !c.isConcluded;
+            }
         });
 
         return filtered.sort((a, b) => {
@@ -133,7 +171,7 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                     return 0;
             }
         });
-    }, [cases, activeCategory, searchTerm, sortBy]);
+    }, [cases, activeCategory, searchTerm, sortBy, showConcluded]);
 
     const generatePDF = (dataToExport: CivilCase[], title: string) => {
         try {
@@ -235,7 +273,23 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                         <span className="w-2 h-6 bg-justice-500 rounded-full"></span>
                         Controle: {getCategoryDisplay(activeCategory)}
                     </h2>
-                    <div className="flex gap-2 w-full md:w-auto">
+                    <div className="flex gap-2 w-full md:w-auto flex-wrap justify-end">
+                        {/* Status Filter / Counter */}
+                        <div className="flex bg-white rounded-lg border p-1 shadow-sm mr-2">
+                            <button
+                                onClick={() => setShowConcluded(false)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all ${!showConcluded ? 'bg-orange-100 text-orange-700 font-medium' : 'text-gray-500 hover:bg-gray-50'}`}
+                            >
+                                <Clock size={16} /> Pendentes ({stats.pending})
+                            </button>
+                            <button
+                                onClick={() => setShowConcluded(true)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all ${showConcluded ? 'bg-green-100 text-green-700 font-medium' : 'text-gray-500 hover:bg-gray-50'}`}
+                            >
+                                <CheckCircle size={16} /> Concluídos ({stats.concluded})
+                            </button>
+                        </div>
+
                         <div className="flex gap-2 mr-2">
                             <button onClick={handleGeneralPDF} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 border border-gray-300 transition-colors" title="PDF Geral (Todos)">
                                 <FileText size={18} /> <span className="hidden md:inline">PDF Geral</span>
@@ -282,8 +336,9 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs border-b">
                             <tr>
+                                <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Nome / Parte</th>
-                                <th className="px-6 py-4">Processo</th>
+                                <th className="px-6 py-4">Processo / Servidor</th>
                                 <th className="px-6 py-4">Entrada</th>
                                 <th className="px-6 py-4">Última Mov.</th>
                                 <th className="px-6 py-4">Prazo / Limite</th>
@@ -293,22 +348,36 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-gray-500">Carregando processos...</td></tr>
+                                <tr><td colSpan={8} className="p-8 text-center text-gray-500">Carregando processos...</td></tr>
                             ) : filteredCases.length === 0 ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-gray-400">Nenhum processo encontrado nesta categoria.</td></tr>
+                                <tr><td colSpan={8} className="p-8 text-center text-gray-400">Nenhum processo encontrado nesta categoria.</td></tr>
                             ) : filteredCases.map(c => {
                                 const daysLeft = c.deadlineDate ? calculateDaysUntil(c.deadlineDate) : null;
                                 const isExpired = daysLeft !== null && daysLeft < 0;
                                 const isNear = daysLeft !== null && daysLeft >= 0 && daysLeft <= 15;
 
                                 return (
-                                    <tr key={c.id} className="hover:bg-blue-50/30 transition-colors group">
+                                    <tr key={c.id} className={`hover:bg-blue-50/30 transition-colors group ${c.isConcluded ? 'bg-gray-50/80' : ''}`}>
+                                        <td className="px-6 py-4">
+                                            <button
+                                                onClick={() => handleToggleConclusion(c)}
+                                                className={`p-1.5 rounded-full transition-colors ${c.isConcluded ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                                title={c.isConcluded ? 'Reabrir Processo' : 'Concluir Processo'}
+                                            >
+                                                <CheckCircle size={20} className={c.isConcluded ? 'fill-current' : ''} />
+                                            </button>
+                                        </td>
                                         <td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
-                                        <td className="px-6 py-4 text-gray-600 font-mono">
-                                            {c.caseNumber}
+                                        <td className="px-6 py-4 text-gray-600">
+                                            <div className="font-mono text-sm">{c.caseNumber}</div>
+                                            {c.responsibleServer && (
+                                                <div className="text-xs text-indigo-600 flex items-center gap-1 mt-1 font-medium bg-indigo-50 px-1.5 py-0.5 rounded w-fit">
+                                                    <User size={10} /> {c.responsibleServer}
+                                                </div>
+                                            )}
                                             {c.isDelegated && <span className="ml-2 px-1.5 py-0.5 text-[0.65rem] bg-indigo-100 text-indigo-700 rounded border border-indigo-200 uppercase font-bold tracking-wider">E-Prec</span>}
                                             {(c.category === 'RPV' || c.category === 'Precatório') && (
-                                                <span className={`ml-2 px-1.5 py-0.5 text-[0.65rem] rounded border uppercase font-bold tracking-wider ${c.expeditionStatus === 'dispatched' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'}`}>
+                                                <span className={`block w-fit mt-1 px-1.5 py-0.5 text-[0.65rem] rounded border uppercase font-bold tracking-wider ${c.expeditionStatus === 'dispatched' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'}`}>
                                                     {c.expeditionStatus === 'dispatched' ? 'Expedido' : 'Pendente'}
                                                 </span>
                                             )}

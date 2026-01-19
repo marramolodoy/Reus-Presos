@@ -1,7 +1,19 @@
+const getLocalDateFromStr = (dateString: string): Date => {
+  if (!dateString) return new Date();
+  // Split by T to ignore time, then by - to get components
+  // "2026-01-18T..." -> "2026-01-18" -> [2026, 1, 18]
+  const [y, m, d] = dateString.split('T')[0].split('-').map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0, 0);
+};
+
 export const calculateDaysDiff = (dateString: string): number => {
   if (!dateString) return 0;
-  const start = new Date(dateString);
+
+  const start = getLocalDateFromStr(dateString);
   const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  // Time difference in milliseconds
   const diffTime = Math.abs(now.getTime() - start.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
@@ -9,15 +21,18 @@ export const calculateDaysDiff = (dateString: string): number => {
 
 export const calculateDaysUntil = (dateString: string): number => {
   if (!dateString) return 0;
-  const target = new Date(dateString);
+
+  const target = getLocalDateFromStr(dateString);
   const now = new Date();
-  const diffTime = target.getTime() - now.getTime(); // Positive if future
+  now.setHours(0, 0, 0, 0);
+
+  const diffTime = target.getTime() - now.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
 export const formatDate = (dateString: string): string => {
   if (!dateString) return '-';
-  const date = new Date(dateString);
+  const date = getLocalDateFromStr(dateString);
   return new Intl.DateTimeFormat('pt-BR').format(date);
 };
 

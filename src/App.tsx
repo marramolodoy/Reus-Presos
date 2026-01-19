@@ -8,9 +8,10 @@ import { AdminDashboard } from './modules/Administrative/AdminDashboard';
 import { NotesBoard } from './modules/Notes/NotesBoard';
 import { CivilDashboard } from './modules/Civil/CivilDashboard';
 import { RogatoryDashboard } from './modules/Rogatory/RogatoryDashboard';
+import { LawyerDashboard } from './modules/Lawyer/LawyerDashboard';
 
 // Types for Module Switcher
-type ModuleType = 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory';
+type ModuleType = 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -70,6 +71,8 @@ export default function App() {
         return <AdminDashboard session={session} />;
       case 'rogatory':
         return <RogatoryDashboard session={session} />;
+      case 'lawyer':
+        return <LawyerDashboard session={session} />;
       default:
         return <CriminalDashboard session={session} courtName={courtName} />;
     }
