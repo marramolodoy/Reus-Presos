@@ -9,9 +9,11 @@ import { NotesBoard } from './modules/Notes/NotesBoard';
 import { CivilDashboard } from './modules/Civil/CivilDashboard';
 import { RogatoryDashboard } from './modules/Rogatory/RogatoryDashboard';
 import { LawyerDashboard } from './modules/Lawyer/LawyerDashboard';
+import { CriticalIssuesDashboard } from './modules/CriticalIssues/CriticalIssuesDashboard';
+import { SchedulesDashboard } from './modules/Schedules/SchedulesDashboard';
 
 // Types for Module Switcher
-type ModuleType = 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer';
+type ModuleType = 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -73,6 +75,10 @@ export default function App() {
         return <RogatoryDashboard session={session} />;
       case 'lawyer':
         return <LawyerDashboard session={session} />;
+      case 'critical_issues':
+        return <CriticalIssuesDashboard session={session} />;
+      case 'schedules':
+        return <SchedulesDashboard session={session} />;
       default:
         return <CriminalDashboard session={session} courtName={courtName} />;
     }
