@@ -59,14 +59,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExp
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {PRISON_TYPES.map(type => (
                                 <button
                                     key={type}
                                     onClick={() => toggleType(type)}
                                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all ${selectedTypes.includes(type)
-                                            ? 'bg-justice-50 border-justice-200 text-justice-800 font-medium'
-                                            : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                                        ? 'bg-justice-50 border-justice-200 text-justice-800 font-medium'
+                                        : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
                                         }`}
                                 >
                                     {selectedTypes.includes(type)
@@ -122,17 +122,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExp
                     </div>
                 </div>
 
-                <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+                <div className="p-4 bg-gray-50 border-t border-gray-100 flex flex-col-reverse sm:flex-row justify-end gap-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium text-sm"
+                        className="w-full sm:w-auto px-4 py-2 text-gray-600 hover:text-gray-800 font-medium text-sm"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={() => onExport({ selectedTypes, sortBy })}
                         disabled={selectedTypes.length === 0}
-                        className="px-6 py-2 bg-justice-700 text-white rounded-lg hover:bg-justice-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-bold text-sm shadow-sm transition-all transform active:scale-95"
+                        className="w-full sm:w-auto px-6 py-2 bg-justice-700 text-white rounded-lg hover:bg-justice-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-bold text-sm shadow-sm transition-all transform active:scale-95"
                     >
                         <Download size={16} /> Gerar PDF
                     </button>

@@ -78,7 +78,7 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
     };
 
     return (
-        <form onSubmit={handleSubmit} className="p-6 bg-white rounded-lg w-full max-w-2xl mx-auto shadow-sm max-h-[90vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 md:p-6 bg-white rounded-lg w-full max-w-2xl mx-auto shadow-sm max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h2 className="text-2xl font-bold text-gray-800">
                     {initialData ? 'Editar Processo Cível' : 'Novo Processo Cível'}
@@ -255,11 +255,11 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-                <button type="button" onClick={onCancel} className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6 pt-4 border-t">
+                <button type="button" onClick={onCancel} className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
                     Cancelar
                 </button>
-                <button type="submit" className="px-4 py-2 bg-justice-600 text-white rounded hover:bg-justice-700 flex items-center gap-2">
+                <button type="submit" className="w-full sm:w-auto px-4 py-2 bg-justice-600 text-white rounded hover:bg-justice-700 flex items-center justify-center gap-2">
                     <Save size={18} /> Salvar
                 </button>
             </div>

@@ -65,7 +65,7 @@ export const RecycleBinModal: React.FC<RecycleBinModalProps> = ({ isOpen, onClos
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-2 md:p-4 backdrop-blur-sm">
             <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl flex flex-col max-h-[80vh]">
                 <div className="flex justify-between items-center p-4 border-b bg-gray-50 rounded-t-lg">
                     <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -78,50 +78,54 @@ export const RecycleBinModal: React.FC<RecycleBinModalProps> = ({ isOpen, onClos
                 </div>
 
                 <div className="flex-1 overflow-auto p-0">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-100 text-gray-600 font-semibold uppercase text-xs sticky top-0">
-                            <tr>
-                                <th className="px-4 py-3">Réu</th>
-                                <th className="px-4 py-3">Data Exclusão</th>
-                                <th className="px-4 py-3 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {loading ? (
-                                <tr><td colSpan={3} className="p-4 text-center">Carregando...</td></tr>
-                            ) : deletedItems.length === 0 ? (
-                                <tr><td colSpan={3} className="p-8 text-center text-gray-400">Lixeira vazia.</td></tr>
-                            ) : (
-                                deletedItems.map(item => (
-                                    <tr key={item.id} className="hover:bg-red-50 group">
-                                        <td className="px-4 py-3">
-                                            <div className="font-bold">{item.name}</div>
-                                            <div className="text-xs text-gray-500">{item.caseNumber}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-600">
-                                            {item.deleted_at ? new Date(item.deleted_at).toLocaleString('pt-BR') : '-'}
-                                        </td>
-                                        <td className="px-4 py-3 text-right flex justify-end gap-2">
-                                            <button
-                                                onClick={() => handleRestore(item.id)}
-                                                className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-bold flex items-center gap-1"
-                                                title="Restaurar para a lista principal"
-                                            >
-                                                <RefreshCcw size={14} /> Restaurar
-                                            </button>
-                                            <button
-                                                onClick={() => handlePermanentDelete(item.id)}
-                                                className="p-1 text-gray-400 hover:text-red-600"
-                                                title="Excluir Permanentemente"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </td>
+                    <div className="min-w-full inline-block align-middle">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-100 text-gray-600 font-semibold uppercase text-xs sticky top-0">
+                                    <tr>
+                                        <th className="px-4 py-3">Réu</th>
+                                        <th className="px-4 py-3">Data Exclusão</th>
+                                        <th className="px-4 py-3 text-right">Ações</th>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {loading ? (
+                                        <tr><td colSpan={3} className="p-4 text-center">Carregando...</td></tr>
+                                    ) : deletedItems.length === 0 ? (
+                                        <tr><td colSpan={3} className="p-8 text-center text-gray-400">Lixeira vazia.</td></tr>
+                                    ) : (
+                                        deletedItems.map(item => (
+                                            <tr key={item.id} className="hover:bg-red-50 group">
+                                                <td className="px-4 py-3">
+                                                    <div className="font-bold">{item.name}</div>
+                                                    <div className="text-xs text-gray-500">{item.caseNumber}</div>
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-600">
+                                                    {item.deleted_at ? new Date(item.deleted_at).toLocaleString('pt-BR') : '-'}
+                                                </td>
+                                                <td className="px-4 py-3 text-right flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleRestore(item.id)}
+                                                        className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs font-bold flex items-center gap-1"
+                                                        title="Restaurar para a lista principal"
+                                                    >
+                                                        <RefreshCcw size={14} /> Restaurar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handlePermanentDelete(item.id)}
+                                                        className="p-1 text-gray-400 hover:text-red-600"
+                                                        title="Excluir Permanentemente"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="p-3 border-t bg-gray-50 text-xs text-gray-500 text-center rounded-b-lg">
