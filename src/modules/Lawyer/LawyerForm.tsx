@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
 import { LawyerRequest, LawyerRequestFormData } from '../../types';
+import { Button } from '../../components/ui/Button';
 
 interface LawyerFormProps {
     initialData?: LawyerRequest;
@@ -66,9 +67,9 @@ export const LawyerForm: React.FC<LawyerFormProps> = ({ initialData, onSubmit, o
                 <h2 className="text-2xl font-bold text-gray-800">
                     {initialData ? 'Editar Requerimento' : 'Novo Requerimento'}
                 </h2>
-                <button type="button" onClick={onCancel} className="text-gray-500 hover:text-gray-700">
+                <Button variant="ghost" size="icon" onClick={onCancel} className="text-gray-500 hover:text-gray-700">
                     <X size={24} />
-                </button>
+                </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -173,12 +174,12 @@ export const LawyerForm: React.FC<LawyerFormProps> = ({ initialData, onSubmit, o
             </div>
 
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-                <button type="button" onClick={onCancel} className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+                <Button variant="secondary" onClick={onCancel}>
                     Cancelar
-                </button>
-                <button type="submit" className="px-4 py-2 bg-justice-600 text-white rounded hover:bg-justice-700 flex items-center gap-2">
-                    <Save size={18} /> Salvar
-                </button>
+                </Button>
+                <Button type="submit" variant="primary" leftIcon={Save}>
+                    Salvar
+                </Button>
             </div>
         </form>
     );
