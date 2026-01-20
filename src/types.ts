@@ -115,3 +115,34 @@ export interface LawyerRequest {
 }
 
 export type LawyerRequestFormData = Omit<LawyerRequest, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'deletedAt'>;
+
+export interface CriticalIssue {
+  id: string;
+  processNumber: string;
+  defendantName?: string;
+  lastMovementDate: string;
+  reason: string;
+  responsibleServer: string;
+  status: 'pending' | 'resolved';
+  user_id: string;
+  deletedAt?: string | null;
+}
+
+export type CriticalIssueFormData = Omit<CriticalIssue, 'id' | 'user_id' | 'status' | 'deletedAt'>;
+
+export interface PendingSchedule {
+  id: string;
+  processNumber: string; // process_number
+  lastMovementDate: string; // last_movement_date
+  subject: string;
+  obs: string;
+  type: 'hearing' | 'expertise';
+  hearingType?: 'Conciliação' | 'Preliminar' | 'AIJ' | 'Continuação'; // hearing_type
+  competence: 'Juizado' | 'Cível' | 'Criminal' | 'Delegada';
+  expertiseType?: string; // expertise_type
+  status: 'pending' | 'resolved';
+  user_id: string;
+  deletedAt?: string | null; // deleted_at
+}
+
+export type PendingScheduleFormData = Omit<PendingSchedule, 'id' | 'user_id' | 'status' | 'deletedAt'>;

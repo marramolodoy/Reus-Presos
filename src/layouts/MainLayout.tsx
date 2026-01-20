@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Scale, Menu, StickyNote, Gavel, FileText, UserCog, Edit } from 'lucide-react';
+import { LogOut, Scale, Menu, StickyNote, Gavel, FileText, UserCog, Edit, AlertTriangle, CalendarRange } from 'lucide-react';
+
+
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -10,8 +12,10 @@ interface MainLayoutProps {
     appTitle: string;
     appSubtitle: string;
     onEditAppDetails: () => void;
-    activeModule: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer';
-    onModuleChange: (module: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer') => void;
+    activeModule: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules';
+    onModuleChange: (module: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules') => void;
+
+
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
@@ -48,7 +52,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         { id: 'lawyer', label: 'Req. Advogados', icon: UserCog },
         { id: 'notes', label: 'Avisos / Mural', icon: StickyNote },
         { id: 'admin', label: 'Administrativo', icon: FileText },
-        { id: 'rogatory', label: 'Carta Precatória', icon: UserCog }, // Using UserCog as placeholder
+        { id: 'rogatory', label: 'Carta Precatória', icon: UserCog },
+        { id: 'critical_issues', label: 'Pendências Críticas', icon: AlertTriangle },
+        { id: 'schedules', label: 'Audiências & Perícias', icon: CalendarRange },
     ] as const;
 
     return (
