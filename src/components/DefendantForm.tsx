@@ -68,9 +68,9 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl flex flex-col max-h-[90vh]">
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl flex flex-col max-h-[95vh] md:max-h-[90vh]">
+        <div className="flex justify-between items-center p-4 md:p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-slate-800">
             {initialData ? 'Editar Réu' : 'Cadastrar Novo Réu'}
           </h2>
@@ -79,15 +79,15 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
 
             {/* Dados Pessoais e Processuais */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2">
               <h3 className="text-sm font-semibold text-justice-700 uppercase tracking-wider mb-4">Dados Principais</h3>
             </div>
 
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Réu *</label>
               <input required name="name" value={formData.name} onChange={handleChange} className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-justice-500 outline-none" placeholder="Nome completo" />
             </div>
@@ -120,7 +120,7 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
             </div>
 
             {/* Datas Críticas */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
               <h3 className="text-sm font-semibold text-justice-700 uppercase tracking-wider mb-4">Controle de Prazos</h3>
             </div>
 
@@ -139,7 +139,7 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
             </div>
 
             {/* Movimentação */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
               <h3 className="text-sm font-semibold text-justice-700 uppercase tracking-wider mb-4">Situação Processual</h3>
             </div>
 
@@ -165,11 +165,11 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
             </div>
 
             {/* Audiências e Vínculos */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
               <h3 className="text-sm font-semibold text-justice-700 uppercase tracking-wider mb-4">Audiências e Vínculos</h3>
             </div>
 
-            <div className="col-span-1 md:col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <input
                   type="checkbox"
@@ -287,7 +287,7 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
             </div>
 
             {/* Identificadores e OBS */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 pb-2 border-b border-gray-100 mb-2 mt-4 ml-0">
               <h3 className="text-sm font-semibold text-justice-700 uppercase tracking-wider mb-4">Identificação e Observações</h3>
             </div>
 
@@ -306,7 +306,7 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
               <input name="infopen" value={formData.infopen} onChange={handleChange} className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-justice-500 outline-none" />
             </div>
 
-            <div className="col-span-1 md:col-span-2 lg:col-span-3">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3">
               <label className="block text-sm font-medium text-gray-700 mb-1">Observações (OBS)</label>
               <textarea name="obs" value={formData.obs} onChange={handleChange} rows={3} className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-justice-500 outline-none" />
             </div>
@@ -314,11 +314,11 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
           </div>
         </form>
 
-        <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-lg">
-          <button type="button" onClick={onCancel} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 font-medium">
+        <div className="p-4 md:p-6 border-t border-gray-200 bg-gray-50 flex flex-col-reverse sm:flex-row justify-end gap-3 rounded-b-lg">
+          <button type="button" onClick={onCancel} className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 font-medium">
             Cancelar
           </button>
-          <button onClick={handleSubmit} className="px-4 py-2 bg-justice-700 text-white rounded hover:bg-justice-900 flex items-center gap-2 font-medium shadow-sm">
+          <button onClick={handleSubmit} className="w-full sm:w-auto px-4 py-2 bg-justice-700 text-white rounded hover:bg-justice-900 flex items-center justify-center gap-2 font-medium shadow-sm">
             <Save size={18} />
             Salvar Registro
           </button>

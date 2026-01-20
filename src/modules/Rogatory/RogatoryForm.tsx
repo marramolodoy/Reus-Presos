@@ -85,8 +85,8 @@ export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, 
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 md:p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[95vh] overflow-y-auto">
                 <div className="bg-gray-50 border-b p-4 flex justify-between items-center">
                     <h3 className="font-bold text-lg text-gray-800">{initialData ? 'Editar Carta Precatória' : 'Nova Carta Precatória'}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -94,7 +94,7 @@ export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, 
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4">
                     {/* Direction Toggle */}
                     <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
                         <button
@@ -113,7 +113,7 @@ export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, 
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Processo Origem</label>
                             <input
@@ -172,7 +172,7 @@ export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, 
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 {formData.direction === 'incoming' ? 'Data Recebimento' : 'Data de Envio'}
@@ -266,18 +266,18 @@ export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, 
                         )}
                     </div>
 
-                    <div className="flex justify-end pt-4 gap-2 border-t mt-4">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end pt-4 gap-2 border-t mt-4">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm"
+                            className="w-full sm:w-auto px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm shadow-sm font-medium disabled:opacity-50"
+                            className="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-sm shadow-sm font-medium disabled:opacity-50"
                         >
                             <Save size={16} />
                             {loading ? 'Salvando...' : 'Salvar Carta'}

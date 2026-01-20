@@ -244,12 +244,12 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                 <button onClick={exportToCSV} className="btn-outline-secondary flex items-center gap-2 px-3 py-2 border rounded bg-white text-sm"><Download size={16} /> CSV</button>
                                 <button onClick={() => setIsExportModalOpen(true)} className="btn-outline-primary flex items-center gap-2 px-3 py-2 border rounded bg-white text-sm"><Download size={16} /> PDF Geral</button>
                                 <button onClick={generatePDF} className="btn-outline-danger flex items-center gap-2 px-3 py-2 border rounded bg-white text-sm"><FileText size={16} /> PDF Atual</button>
-                                <button onClick={() => { setEditingId(null); setIsFormOpen(true); }} className="bg-justice-600 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-bold shadow hover:bg-justice-700"><Plus size={16} /> Novo Réu</button>
+                                <button onClick={() => { setEditingId(null); setIsFormOpen(true); }} className="bg-justice-600 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-bold shadow hover:bg-justice-700 w-full md:w-auto justify-center"><Plus size={16} /> Novo Réu</button>
                             </div>
                         </div>
 
                         {/* KPI Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                             <div className="bg-white p-4 rounded shadow border-l-4 border-justice-500">
                                 <p className="text-xs font-bold text-gray-500 uppercase">Total</p>
                                 <p className="text-2xl font-bold">{stats.total}</p>
