@@ -5,6 +5,8 @@ import { LawyerForm } from './LawyerForm';
 import { supabase } from '../../lib/supabase';
 import { formatDate } from '../../utils';
 import { LawyerTrashModal } from './LawyerTrashModal';
+import { Button } from '../../components/ui/Button';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -21,6 +23,10 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
     const [isTrashOpen, setIsTrashOpen] = useState(false);
     const [showConcluded, setShowConcluded] = useState(false); // Toggle to show concluded items
     const [sortBy, setSortBy] = useState('date_desc');
+
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; description: string; onConfirm: () => void; }>({
+        isOpen: false, title: '', description: '', onConfirm: () => { }
+    });
 
     // Fetch Requests
     const fetchRequests = async () => {
@@ -89,16 +95,23 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
     };
 
     // Soft Delete
-    const handleDelete = async (id: string) => {
-        if (window.confirm('Mover para lixeira?')) {
-            const { error } = await supabase
-                .from('lawyer_requests')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('id', id);
+    const handleDeleteClick = (id: string, name: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Excluir Requerimento',
+            description: `Tem certeza que deseja processar a exclusão de "${name}"?`,
+            onConfirm: async () => {
+                const { error } = await supabase
+                    .from('lawyer_requests')
+                    .update({ deleted_at: new Date().toISOString() })
+                    .eq('id', id);
 
-            if (error) alert('Erro: ' + error.message);
-            else await fetchRequests();
-        }
+                if (error) alert('Erro: ' + error.message);
+                else await fetchRequests();
+
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
 
     // Toggle Conclusion
@@ -203,6 +216,14 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
                 onRestore={fetchRequests}
             />
 
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                description={confirmModal.description}
+            />
+
             <div className="flex-1 overflow-auto p-6">
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -228,12 +249,12 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
                         </div>
 
                         <div className="flex gap-2">
-                            <button onClick={generatePDF} className="bg-white text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2 border border-gray-300 transition-colors shadow-sm" title="Gerar PDF">
-                                <Download size={18} /> <span className="hidden md:inline">PDF</span>
-                            </button>
-                            <button onClick={() => setIsTrashOpen(true)} className="bg-red-50 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 flex items-center gap-2 border border-red-200 transition-colors shadow-sm" title="Lixeira">
+                            <Button variant="secondary" onClick={generatePDF} leftIcon={Download} title="Gerar PDF">
+                                <span className="hidden md:inline">PDF</span>
+                            </Button>
+                            <Button variant="outline-danger" onClick={() => setIsTrashOpen(true)} title="Lixeira">
                                 <ArchiveRestore size={18} />
-                            </button>
+                            </Button>
                         </div>
 
                         <div className="relative md:w-64">
@@ -260,9 +281,9 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
                             </select>
                         </div>
 
-                        <button onClick={() => { setEditingId(null); setIsFormOpen(true); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm">
-                            <Plus size={18} /> Novo
-                        </button>
+                        <Button onClick={() => { setEditingId(null); setIsFormOpen(true); }} leftIcon={Plus} className="shadow-sm">
+                            Novo
+                        </Button>
                     </div>
                 </div>
 
@@ -322,7 +343,7 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
                                                 {req.isConcluded ? <Clock size={16} /> : <CheckCircle size={16} />}
                                             </button>
                                             <button onClick={() => { setEditingId(req.id); setIsFormOpen(true); }} className="p-1 text-blue-600 hover:bg-blue-100 rounded" title="Editar"><Edit size={16} /></button>
-                                            <button onClick={() => handleDelete(req.id)} className="p-1 text-red-600 hover:bg-red-100 rounded" title="Excluir"><Trash size={16} /></button>
+                                            <button onClick={() => handleDeleteClick(req.id, req.name)} className="p-1 text-red-600 hover:bg-red-100 rounded" title="Excluir"><Trash size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>

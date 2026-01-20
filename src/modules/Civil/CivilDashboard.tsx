@@ -6,6 +6,8 @@ import { supabase } from '../../lib/supabase';
 import { formatDate, calculateDaysDiff, calculateDaysUntil } from '../../utils';
 import { CivilExportModal, CivilExportConfig } from '../../components/CivilExportModal';
 import { CivilTrashModal } from './CivilTrashModal';
+import { Button } from '../../components/ui/Button';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -28,6 +30,10 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
     const [isTrashOpen, setIsTrashOpen] = useState(false);
     const [sortBy, setSortBy] = useState('entry_desc');
     const [showConcluded, setShowConcluded] = useState(false);
+
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; description: string; onConfirm: () => void; }>({
+        isOpen: false, title: '', description: '', onConfirm: () => { }
+    });
 
     const fetchCases = async () => {
         if (!session) return;
@@ -98,16 +104,23 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
         setEditingId(null);
     };
 
-    const handleDelete = async (id: string) => {
-        if (window.confirm('Mover para lixeira?')) {
-            const { error } = await supabase
-                .from('civil_cases')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('id', id);
+    const handleDeleteClick = (id: string, name: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Excluir Processo',
+            description: `Tem certeza que deseja mover "${name}" para a lixeira?`,
+            onConfirm: async () => {
+                const { error } = await supabase
+                    .from('civil_cases')
+                    .update({ deleted_at: new Date().toISOString() })
+                    .eq('id', id);
 
-            if (error) alert('Erro: ' + error.message);
-            else await fetchCases();
-        }
+                if (error) alert('Erro: ' + error.message);
+                else await fetchCases();
+
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
 
     const handleToggleConclusion = async (c: CivilCase) => {
@@ -243,6 +256,14 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                 onExport={generateFullPDF}
             />
 
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                description={confirmModal.description}
+            />
+
             {isFormOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <CivilForm
@@ -291,15 +312,15 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                         </div>
 
                         <div className="flex gap-2 mr-2">
-                            <button onClick={handleGeneralPDF} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 border border-gray-300 transition-colors" title="PDF Geral (Todos)">
-                                <FileText size={18} /> <span className="hidden md:inline">PDF Geral</span>
-                            </button>
-                            <button onClick={handleCurrentPDF} className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 border border-gray-300 transition-colors" title="PDF Atual (Filtrado)">
-                                <Download size={18} /> <span className="hidden md:inline">PDF Atual</span>
-                            </button>
-                            <button onClick={() => setIsTrashOpen(true)} className="bg-red-50 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 flex items-center gap-2 border border-red-200 transition-colors" title="Lixeira">
+                            <Button variant="secondary" onClick={handleGeneralPDF} leftIcon={FileText} title="PDF Geral (Todos)">
+                                <span className="hidden md:inline">PDF Geral</span>
+                            </Button>
+                            <Button variant="secondary" onClick={handleCurrentPDF} leftIcon={Download} title="PDF Atual (Filtrado)">
+                                <span className="hidden md:inline">PDF Atual</span>
+                            </Button>
+                            <Button variant="outline-danger" onClick={() => setIsTrashOpen(true)} title="Lixeira">
                                 <ArchiveRestore size={18} />
-                            </button>
+                            </Button>
                         </div>
                         <div className="relative flex-1 md:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -325,9 +346,9 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                                 <option value="case_number_asc">Processo</option>
                             </select>
                         </div>
-                        <button onClick={() => { setEditingId(null); setIsFormOpen(true); }} className="bg-justice-600 text-white px-4 py-2 rounded-lg hover:bg-justice-700 flex items-center gap-2 shadow">
-                            <Plus size={18} /> Novo
-                        </button>
+                        <Button onClick={() => { setEditingId(null); setIsFormOpen(true); }} leftIcon={Plus} className="shadow">
+                            Novo
+                        </Button>
                     </div>
                 </div>
 
@@ -416,8 +437,8 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                                         <td className="px-6 py-4 text-gray-500 max-w-[200px] truncate" title={c.obs}>{c.obs || '-'}</td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => { setEditingId(c.id); setIsFormOpen(true); }} className="p-1 text-blue-600 hover:bg-blue-100 rounded"><Edit size={16} /></button>
-                                                <button onClick={() => handleDelete(c.id)} className="p-1 text-red-600 hover:bg-red-100 rounded"><Trash size={16} /></button>
+                                                <Button variant="ghost" size="icon" onClick={() => { setEditingId(c.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(c.id, c.name)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
                                             </div>
                                         </td>
                                     </tr>

@@ -11,12 +11,15 @@ import {
     Link as LinkIcon,
     CalendarDays,
     Edit,
-    Trash
+    Trash,
+    MoreHorizontal
 } from 'lucide-react';
 import { Defendant, DefendantFormData, DashboardStats } from '../../types';
 import { DefendantForm } from '../../components/DefendantForm';
 import { DashboardCharts } from '../../components/DashboardCharts';
 import { RecycleBinModal } from '../../components/RecycleBinModal';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
+import { Button } from '../../components/ui/Button';
 import { calculateDaysDiff, calculateDaysUntil, formatDate, getStatusColor, THRESHOLD_IMPRISONMENT, THRESHOLD_REVIEW } from '../../utils';
 
 import { ExportModal, ExportConfig } from '../../components/ExportModal';
@@ -36,6 +39,12 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isRecycleBinOpen, setIsRecycleBinOpen] = useState(false);
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; description: string; onConfirm: () => void; }>({
+        isOpen: false, title: '', description: '', onConfirm: () => { }
+    });
+
     const [editingId, setEditingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -105,16 +114,23 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
         setIsFormOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (window.confirm('Mover para a lixeira?')) {
-            const { error } = await supabase
-                .from('defendants')
-                .update({ deleted_at: new Date().toISOString() })
-                .eq('id', id);
+    const handleDeleteClick = (id: string, name: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Excluir Réu',
+            description: `Tem certeza que deseja mover "${name}" para a lixeira?`,
+            onConfirm: async () => {
+                const { error } = await supabase
+                    .from('defendants')
+                    .update({ deleted_at: new Date().toISOString() })
+                    .eq('id', id);
 
-            if (error) alert('Erro ao excluir: ' + error.message);
-            else await fetchDefendants();
-        }
+                if (error) alert('Erro ao excluir: ' + error.message);
+                else await fetchDefendants();
+
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
 
     // ... (rest of component) ...
@@ -209,6 +225,15 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
             {/* EXPORT MODAL */}
             <ExportModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} onExport={generateFullPDF} />
 
+            {/* CONFIRMATION MODAL */}
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                description={confirmModal.description}
+            />
+
             {/* HISTORY / RECYCLE BIN */}
             <RecycleBinModal isOpen={isRecycleBinOpen} onClose={() => setIsRecycleBinOpen(false)} onRestore={fetchDefendants} />
 
@@ -239,12 +264,12 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                         {/* Header Stats & Tools */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                             <h2 className="text-xl font-bold text-gray-800">Controle de Processos</h2>
-                            <div className="flex flex-wrap gap-2">
-                                <button onClick={() => setIsRecycleBinOpen(true)} className="btn-outline-secondary flex items-center gap-2 px-3 py-2 border rounded bg-white text-sm text-gray-600 hover:text-red-500 hover:border-red-200"><Trash size={16} /> Histórico</button>
-                                <button onClick={exportToCSV} className="btn-outline-secondary flex items-center gap-2 px-3 py-2 border rounded bg-white text-sm"><Download size={16} /> CSV</button>
-                                <button onClick={() => setIsExportModalOpen(true)} className="btn-outline-primary flex items-center gap-2 px-3 py-2 border rounded bg-white text-sm"><Download size={16} /> PDF Geral</button>
-                                <button onClick={generatePDF} className="btn-outline-danger flex items-center gap-2 px-3 py-2 border rounded bg-white text-sm"><FileText size={16} /> PDF Atual</button>
-                                <button onClick={() => { setEditingId(null); setIsFormOpen(true); }} className="bg-justice-600 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-bold shadow hover:bg-justice-700 w-full md:w-auto justify-center"><Plus size={16} /> Novo Réu</button>
+                            <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                                <Button variant="outline-danger" onClick={() => setIsRecycleBinOpen(true)} leftIcon={Trash}>Histórico</Button>
+                                <Button variant="outline" onClick={exportToCSV} leftIcon={Download}>CSV</Button>
+                                <Button variant="outline-primary" onClick={() => setIsExportModalOpen(true)} leftIcon={Download}>PDF Geral</Button>
+                                <Button variant="outline" onClick={generatePDF} leftIcon={FileText}>PDF Atual</Button>
+                                <Button variant="primary" onClick={() => { setEditingId(null); setIsFormOpen(true); }} leftIcon={Plus} className="w-full md:w-auto">Novo Réu</Button>
                             </div>
                         </div>
 
@@ -325,30 +350,13 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex justify-end gap-2 relative z-10">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
+                                                    <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEdit(d); }} title="Editar">
+                                                        <Edit size={16} className="text-blue-600" />
+                                                    </Button>
 
-                                                            handleEdit(d);
-                                                        }}
-                                                        className="text-blue-600 hover:bg-blue-50 p-1 rounded cursor-pointer"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-
-                                                            handleDelete(d.id);
-                                                        }}
-                                                        className="text-red-600 hover:bg-red-50 p-1 rounded cursor-pointer"
-                                                        title="Excluir"
-                                                    >
-                                                        <Trash size={16} />
-                                                    </button>
+                                                    <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteClick(d.id, d.name); }} title="Excluir">
+                                                        <Trash size={16} className="text-red-600" />
+                                                    </Button>
                                                 </div>
                                             </td>
                                         </tr>

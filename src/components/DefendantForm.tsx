@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Defendant, DefendantFormData } from '../types';
 
-import { X, Save, Search, Link as LinkIcon } from 'lucide-react';
+import { X, Save, Search, Link as LinkIcon, AlertCircle } from 'lucide-react';
+import { Button } from './ui/Button';
 
 interface Props {
   initialData?: Defendant;
@@ -234,7 +235,9 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
                     );
                   })}
                   {(!formData.linkedDefendantIds || formData.linkedDefendantIds.length === 0) && (
-                    <span className="text-xs text-gray-400 italic py-1">Nenhum processo vinculado.</span>
+                    <span className="text-xs text-gray-400 italic py-1 flex items-center gap-1">
+                      <AlertCircle size={12} /> Nenhum processo vinculado.
+                    </span>
                   )}
                 </div>
 
@@ -312,18 +315,17 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
             </div>
 
           </div>
-        </form>
+        </form >
 
         <div className="p-4 md:p-6 border-t border-gray-200 bg-gray-50 flex flex-col-reverse sm:flex-row justify-end gap-3 rounded-b-lg">
-          <button type="button" onClick={onCancel} className="w-full sm:w-auto px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 font-medium">
+          <Button variant="secondary" onClick={onCancel} className="w-full sm:w-auto">
             Cancelar
-          </button>
-          <button onClick={handleSubmit} className="w-full sm:w-auto px-4 py-2 bg-justice-700 text-white rounded hover:bg-justice-900 flex items-center justify-center gap-2 font-medium shadow-sm">
-            <Save size={18} />
+          </Button>
+          <Button variant="primary" onClick={(e) => handleSubmit(e as any)} leftIcon={Save} className="w-full sm:w-auto">
             Salvar Registro
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
