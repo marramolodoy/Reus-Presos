@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { formatDate, calculateDaysDiff } from '../../utils';
 import { Button } from '../../components/ui/Button';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
+import { useUserRole } from '../../hooks/useUserRole';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -16,6 +17,7 @@ interface SchedulesDashboardProps {
 }
 
 export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session }) => {
+    const { canDelete, canEdit } = useUserRole(session);
     const [schedules, setSchedules] = useState<PendingSchedule[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -338,8 +340,12 @@ export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session 
                                             >
                                                 {i.status === 'resolved' ? <RefreshCw size={16} /> : <CheckCircle size={16} />}
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => { setEditingId(i.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(i.id, i.processNumber)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
+                                            {canEdit && (
+                                                <Button variant="ghost" size="icon" onClick={() => { setEditingId(i.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
+                                            )}
+                                            {canDelete && (
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(i.id, i.processNumber)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

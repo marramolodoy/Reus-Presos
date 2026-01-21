@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { formatDate, calculateDaysDiff } from '../../utils';
 import { Button } from '../../components/ui/Button';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
+import { useUserRole } from '../../hooks/useUserRole';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -16,6 +17,7 @@ interface CriticalIssuesDashboardProps {
 }
 
 export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = ({ session }) => {
+    const { canDelete, canEdit } = useUserRole(session);
     const [issues, setIssues] = useState<CriticalIssue[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -234,9 +236,11 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
                         </div>
 
                         <Button variant="outline" onClick={generatePDF} leftIcon={Download}>PDF</Button>
-                        <Button variant="outline-danger" onClick={() => setIsTrashOpen(true)} title="Lixeira">
-                            <Trash size={18} />
-                        </Button>
+                        {canDelete && (
+                            <Button variant="outline-danger" onClick={() => setIsTrashOpen(true)} title="Lixeira">
+                                <Trash size={18} />
+                            </Button>
+                        )}
 
                         <div className="relative flex-1 md:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -323,8 +327,12 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
                                             >
                                                 {i.status === 'resolved' ? <RefreshCw size={16} /> : <CheckCircle size={16} />}
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => { setEditingId(i.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(i.id, i.processNumber)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
+                                            {canEdit && (
+                                                <Button variant="ghost" size="icon" onClick={() => { setEditingId(i.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
+                                            )}
+                                            {canDelete && (
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(i.id, i.processNumber)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

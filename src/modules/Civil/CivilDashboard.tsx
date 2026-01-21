@@ -10,16 +10,20 @@ import { Button } from '../../components/ui/Button';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useUserRole } from '../../hooks/useUserRole';
+import { CIVIL_CATEGORIES } from '../../constants';
 
 interface CivilDashboardProps {
     session: any;
 }
 
-import { CIVIL_CATEGORIES } from '../../constants';
-
 const CATEGORIES = CIVIL_CATEGORIES;
 
 export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
+    const { checkPermission } = useUserRole(session);
+    const hasEdit = checkPermission('civil', 'edit');
+    const hasAdmin = checkPermission('civil', 'admin');
+
     const [cases, setCases] = useState<CivilCase[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -151,10 +155,6 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                 c.caseNumber.includes(searchTerm);
             const matchesCategory = c.category === activeCategory;
 
-            // Filter by showConcluded logic
-            // If showConcluded is true -> show ONLY concluded? Or show ALL? 
-            // In Lawyer tab, I made it filter either pending OR concluded. 
-            // "permitir filtrar a quantidade de pedidos concluídos"
             if (showConcluded) {
                 return matchesSearch && matchesCategory && c.isConcluded;
             } else {
@@ -172,7 +172,6 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                 case 'entry_asc':
                     return dateA - dateB;
                 case 'deadline_asc':
-                    // Put valid deadlines first, then nulls
                     const deadlineA = a.deadlineDate ? new Date(a.deadlineDate).getTime() : Number.MAX_VALUE;
                     const deadlineB = b.deadlineDate ? new Date(b.deadlineDate).getTime() : Number.MAX_VALUE;
                     return deadlineA - deadlineB;
@@ -318,9 +317,11 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                             <Button variant="secondary" onClick={handleCurrentPDF} leftIcon={Download} title="PDF Atual (Filtrado)">
                                 <span className="hidden md:inline">PDF Atual</span>
                             </Button>
-                            <Button variant="outline-danger" onClick={() => setIsTrashOpen(true)} title="Lixeira">
-                                <ArchiveRestore size={18} />
-                            </Button>
+                            {hasAdmin && (
+                                <Button variant="outline-danger" onClick={() => setIsTrashOpen(true)} title="Lixeira">
+                                    <ArchiveRestore size={18} />
+                                </Button>
+                            )}
                         </div>
                         <div className="relative flex-1 md:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -346,9 +347,11 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                                 <option value="case_number_asc">Processo</option>
                             </select>
                         </div>
-                        <Button onClick={() => { setEditingId(null); setIsFormOpen(true); }} leftIcon={Plus} className="shadow">
-                            Novo
-                        </Button>
+                        {hasEdit && (
+                            <Button onClick={() => { setEditingId(null); setIsFormOpen(true); }} leftIcon={Plus} className="shadow">
+                                Novo
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -380,13 +383,17 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                                 return (
                                     <tr key={c.id} className={`hover:bg-blue-50/30 transition-colors group ${c.isConcluded ? 'bg-gray-50/80' : ''}`}>
                                         <td className="px-6 py-4">
-                                            <button
-                                                onClick={() => handleToggleConclusion(c)}
-                                                className={`p-1.5 rounded-full transition-colors ${c.isConcluded ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
-                                                title={c.isConcluded ? 'Reabrir Processo' : 'Concluir Processo'}
-                                            >
-                                                <CheckCircle size={20} className={c.isConcluded ? 'fill-current' : ''} />
-                                            </button>
+                                            {(hasAdmin || (hasEdit && c.user_id === session.user.id)) ? (
+                                                <button
+                                                    onClick={() => handleToggleConclusion(c)}
+                                                    className={`p-1.5 rounded-full transition-colors ${c.isConcluded ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                                    title={c.isConcluded ? 'Reabrir Processo' : 'Concluir Processo'}
+                                                >
+                                                    <CheckCircle size={20} className={c.isConcluded ? 'fill-current' : ''} />
+                                                </button>
+                                            ) : (
+                                                <CheckCircle size={20} className={`text-gray-300 ${c.isConcluded ? 'fill-current text-green-300' : ''}`} />
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
                                         <td className="px-6 py-4 text-gray-600">
@@ -437,8 +444,12 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                                         <td className="px-6 py-4 text-gray-500 max-w-[200px] truncate" title={c.obs}>{c.obs || '-'}</td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="icon" onClick={() => { setEditingId(c.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
-                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(c.id, c.name)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
+                                                {(hasAdmin || (hasEdit && c.user_id === session.user.id)) && (
+                                                    <>
+                                                        <Button variant="ghost" size="icon" onClick={() => { setEditingId(c.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
+                                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(c.id, c.name)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
+                                                    </>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

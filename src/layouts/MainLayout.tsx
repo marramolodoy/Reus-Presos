@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Scale, Menu, StickyNote, Gavel, FileText, UserCog, Edit, AlertTriangle, CalendarRange } from 'lucide-react';
-
-
+import { LogOut, Scale, Menu, StickyNote, Gavel, FileText, UserCog, Edit, AlertTriangle, CalendarRange, Users } from 'lucide-react';
+import { useUserRole } from '../hooks/useUserRole';
 
 interface MainLayoutProps {
     children: React.ReactNode;
     session: any;
+    // ... (rest unchanged)
     onLogout: () => void;
     courtName: string;
     onEditCourtName: () => void;
     appTitle: string;
     appSubtitle: string;
     onEditAppDetails: () => void;
-    activeModule: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules';
-    onModuleChange: (module: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules') => void;
-
-
+    activeModule: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team';
+    onModuleChange: (module: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team') => void;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
@@ -30,6 +28,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     activeModule,
     onModuleChange
 }) => {
+    const { isAdmin, checkPermission, loading: loadingRole } = useUserRole(session);
     const [isSidebarOpen, setSidebarOpen] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -46,16 +45,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const navItems = [
-        { id: 'criminal', label: 'Criminal', icon: Gavel },
-        { id: 'civil', label: 'Cível & Menores', icon: Scale },
-        { id: 'lawyer', label: 'Req. Advogados', icon: UserCog },
-        { id: 'notes', label: 'Avisos / Mural', icon: StickyNote },
-        { id: 'admin', label: 'Administrativo', icon: FileText },
-        { id: 'rogatory', label: 'Carta Precatória', icon: UserCog },
-        { id: 'critical_issues', label: 'Pendências Críticas', icon: AlertTriangle },
-        { id: 'schedules', label: 'Audiências & Perícias', icon: CalendarRange },
+    const navItemsRaw = [
+        { id: 'criminal', label: 'Criminal', icon: Gavel, perm: 'criminal' },
+        { id: 'civil', label: 'Cível & Menores', icon: Scale, perm: 'civil' },
+        { id: 'lawyer', label: 'Req. Advogados', icon: UserCog, perm: 'lawyer_requests' },
+        { id: 'notes', label: 'Avisos / Mural', icon: StickyNote, perm: 'sticky_notes' },
+        { id: 'admin', label: 'Administrativo', icon: FileText, perm: 'administrative' },
+        { id: 'rogatory', label: 'Carta Precatória', icon: UserCog, perm: 'rogatory' },
+        { id: 'critical_issues', label: 'Pendências Críticas', icon: AlertTriangle, perm: 'critical_issues' },
+        { id: 'schedules', label: 'Audiências & Perícias', icon: CalendarRange, perm: 'schedules' },
+        { id: 'team', label: 'Minha Equipe', icon: Users, perm: 'team' }, // Special case
     ] as const;
+
+    const navItems = navItemsRaw.filter(item => {
+        if (loadingRole) return false;
+        if (item.id === 'team') return isAdmin;
+        return checkPermission(item.perm, 'view');
+    });
 
     return (
         <div className="flex font-sans bg-gray-100 min-h-screen">
