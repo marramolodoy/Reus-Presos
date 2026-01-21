@@ -24,6 +24,7 @@ import { calculateDaysDiff, calculateDaysUntil, formatDate, getStatusColor, THRE
 
 import { ExportModal, ExportConfig } from '../../components/ExportModal';
 import { supabase } from '../../lib/supabase';
+import { useUserRole } from '../../hooks/useUserRole';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -33,6 +34,9 @@ interface CriminalDashboardProps {
 }
 
 export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, courtName }) => {
+    const { checkPermission, isAdmin } = useUserRole(session);
+    const hasEditPerm = checkPermission('criminal', 'edit');
+    const hasAdminPerm = checkPermission('criminal', 'admin');
     const [defendants, setDefendants] = useState<Defendant[]>([]);
     const [loadingData, setLoadingData] = useState(false);
 
@@ -265,11 +269,15 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                             <h2 className="text-xl font-bold text-gray-800">Controle de Processos</h2>
                             <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                                <Button variant="outline-danger" onClick={() => setIsRecycleBinOpen(true)} leftIcon={Trash}>Histórico</Button>
+                                {hasAdminPerm && (
+                                    <Button variant="outline-danger" onClick={() => setIsRecycleBinOpen(true)} leftIcon={Trash}>Histórico</Button>
+                                )}
                                 <Button variant="outline" onClick={exportToCSV} leftIcon={Download}>CSV</Button>
                                 <Button variant="outline-primary" onClick={() => setIsExportModalOpen(true)} leftIcon={Download}>PDF Geral</Button>
                                 <Button variant="outline" onClick={generatePDF} leftIcon={FileText}>PDF Atual</Button>
-                                <Button variant="primary" onClick={() => { setEditingId(null); setIsFormOpen(true); }} leftIcon={Plus} className="w-full md:w-auto">Novo Réu</Button>
+                                {hasEditPerm && (
+                                    <Button variant="primary" onClick={() => { setEditingId(null); setIsFormOpen(true); }} leftIcon={Plus} className="w-full md:w-auto">Novo Réu</Button>
+                                )}
                             </div>
                         </div>
 
@@ -350,13 +358,17 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex justify-end gap-2 relative z-10">
-                                                    <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEdit(d); }} title="Editar">
-                                                        <Edit size={16} className="text-blue-600" />
-                                                    </Button>
+                                                    {(hasAdminPerm || (hasEditPerm && d.user_id === session.user.id)) && (
+                                                        <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEdit(d); }} title="Editar">
+                                                            <Edit size={16} className="text-blue-600" />
+                                                        </Button>
+                                                    )}
 
-                                                    <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteClick(d.id, d.name); }} title="Excluir">
-                                                        <Trash size={16} className="text-red-600" />
-                                                    </Button>
+                                                    {(hasAdminPerm || (hasEditPerm && d.user_id === session.user.id)) && (
+                                                        <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteClick(d.id, d.name); }} title="Excluir">
+                                                            <Trash size={16} className="text-red-600" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
