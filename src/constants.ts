@@ -6,4 +6,5 @@ export const CIVIL_CATEGORIES = [
     'Adoção',
     'RPV',
     'Precatório',
+    'Alvarás',
 ] as const;

@@ -32,7 +32,10 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
         obs: '',
         isDelegated: false,
         expeditionStatus: undefined,
-        responsibleServer: ''
+        responsibleServer: '',
+        signatureServer: false,
+        signatureMagistrate: false,
+        subaccountId: ''
     });
 
     useEffect(() => {
@@ -49,6 +52,9 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
                 isDelegated: initialData.isDelegated || false,
                 expeditionStatus: initialData.expeditionStatus,
                 responsibleServer: initialData.responsibleServer || '',
+                signatureServer: initialData.signatureServer || false,
+                signatureMagistrate: initialData.signatureMagistrate || false,
+                subaccountId: initialData.subaccountId || '',
             });
         }
     }, [initialData]);
@@ -176,6 +182,74 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
                                         <span className="text-sm text-gray-700">Expedido</span>
                                     </label>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Campos Específicos para Alvarás */}
+                    {formData.category === 'Alvarás' && (
+                        <div className="mt-4 flex flex-col gap-4 bg-amber-50 p-4 rounded-lg border border-amber-100 animate-in fade-in slide-in-from-top-2">
+                            <div>
+                                <h3 className="text-sm font-semibold text-amber-900 mb-3 block">Controle & Assinaturas</h3>
+                                <div className="flex flex-col gap-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                                            checked={formData.signatureServer || false}
+                                            onChange={e => setFormData({ ...formData, signatureServer: e.target.checked })}
+                                        />
+                                        <span className="text-sm text-gray-700">Assinatura Servidor</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                                            checked={formData.signatureMagistrate || false}
+                                            onChange={e => setFormData({ ...formData, signatureMagistrate: e.target.checked })}
+                                        />
+                                        <span className="text-sm text-gray-700">Assinatura Magistrado</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-amber-200 pt-3">
+                                <label className="block text-sm font-medium text-amber-900 mb-2">Situação da Expedição</label>
+                                <div className="flex gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="expeditionStatus"
+                                            value="pending"
+                                            checked={formData.expeditionStatus === 'pending' || !formData.expeditionStatus}
+                                            onChange={() => setFormData({ ...formData, expeditionStatus: 'pending' })}
+                                            className="text-amber-600 focus:ring-amber-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Pendente</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="expeditionStatus"
+                                            value="dispatched"
+                                            checked={formData.expeditionStatus === 'dispatched'}
+                                            onChange={() => setFormData({ ...formData, expeditionStatus: 'dispatched' })}
+                                            className="text-amber-600 focus:ring-amber-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Expedido</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-amber-200 pt-3">
+                                <label className="block text-sm font-medium text-amber-900 mb-1">Subconta / Id SISBAJUD</label>
+                                <input
+                                    type="text"
+                                    className="w-full p-2 border border-amber-200 rounded focus:ring-2 focus:ring-amber-500 outline-none bg-amber-50"
+                                    value={formData.subaccountId || ''}
+                                    onChange={e => setFormData({ ...formData, subaccountId: e.target.value })}
+                                    placeholder="Informe o ID para controle da subconta"
+                                />
                             </div>
                         </div>
                     )}

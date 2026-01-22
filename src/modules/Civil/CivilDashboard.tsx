@@ -67,7 +67,10 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                 concludedAt: d.concluded_at,
                 responsibleServer: d.responsible_server,
                 user_id: d.user_id,
-                deletedAt: d.deleted_at
+                deletedAt: d.deleted_at,
+                signatureServer: d.signature_server,
+                signatureMagistrate: d.signature_magistrate,
+                subaccountId: d.subaccount_id
             })));
         }
         setLoading(false);
@@ -93,6 +96,9 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
             is_concluded: data.isConcluded,
             concluded_at: data.concludedAt,
             responsible_server: data.responsibleServer,
+            signature_server: data.signatureServer,
+            signature_magistrate: data.signatureMagistrate,
+            subaccount_id: data.subaccountId,
             user_id: session.user.id
         };
 
@@ -360,14 +366,27 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs border-b">
                             <tr>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Nome / Parte</th>
-                                <th className="px-6 py-4">Processo / Servidor</th>
-                                <th className="px-6 py-4">Entrada</th>
-                                <th className="px-6 py-4">Última Mov.</th>
-                                <th className="px-6 py-4">Prazo / Limite</th>
-                                <th className="px-6 py-4">Obs</th>
-                                <th className="px-6 py-4 text-right">Ações</th>
+                                {activeCategory === 'Alvarás' ? (
+                                    <>
+                                        <th className="px-6 py-4">Status / Controle</th>
+                                        <th className="px-6 py-4">Processo</th>
+                                        <th className="px-6 py-4">Parte</th>
+                                        <th className="px-6 py-4">Assinaturas</th>
+                                        <th className="px-6 py-4">Subconta / ID</th>
+                                        <th className="px-6 py-4 text-right">Ações</th>
+                                    </>
+                                ) : (
+                                    <>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4">Nome / Parte</th>
+                                        <th className="px-6 py-4">Processo / Servidor</th>
+                                        <th className="px-6 py-4">Entrada</th>
+                                        <th className="px-6 py-4">Última Mov.</th>
+                                        <th className="px-6 py-4">Prazo / Limite</th>
+                                        <th className="px-6 py-4">Obs</th>
+                                        <th className="px-6 py-4 text-right">Ações</th>
+                                    </>
+                                )}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -382,66 +401,101 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
 
                                 return (
                                     <tr key={c.id} className={`hover:bg-blue-50/30 transition-colors group ${c.isConcluded ? 'bg-gray-50/80' : ''}`}>
-                                        <td className="px-6 py-4">
-                                            {(hasAdmin || (hasEdit && c.user_id === session.user.id)) ? (
-                                                <button
-                                                    onClick={() => handleToggleConclusion(c)}
-                                                    className={`p-1.5 rounded-full transition-colors ${c.isConcluded ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
-                                                    title={c.isConcluded ? 'Reabrir Processo' : 'Concluir Processo'}
-                                                >
-                                                    <CheckCircle size={20} className={c.isConcluded ? 'fill-current' : ''} />
-                                                </button>
-                                            ) : (
-                                                <CheckCircle size={20} className={`text-gray-300 ${c.isConcluded ? 'fill-current text-green-300' : ''}`} />
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
-                                        <td className="px-6 py-4 text-gray-600">
-                                            <div className="font-mono text-sm">{c.caseNumber}</div>
-                                            {c.responsibleServer && (
-                                                <div className="text-xs text-indigo-600 flex items-center gap-1 mt-1 font-medium bg-indigo-50 px-1.5 py-0.5 rounded w-fit">
-                                                    <User size={10} /> {c.responsibleServer}
-                                                </div>
-                                            )}
-                                            {c.isDelegated && <span className="ml-2 px-1.5 py-0.5 text-[0.65rem] bg-indigo-100 text-indigo-700 rounded border border-indigo-200 uppercase font-bold tracking-wider">E-Prec</span>}
-                                            {(c.category === 'RPV' || c.category === 'Precatório') && (
-                                                <span className={`block w-fit mt-1 px-1.5 py-0.5 text-[0.65rem] rounded border uppercase font-bold tracking-wider ${c.expeditionStatus === 'dispatched' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'}`}>
-                                                    {c.expeditionStatus === 'dispatched' ? 'Expedido' : 'Pendente'}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-600">
-                                            {formatDate(c.entryDate)}
-                                            <span className="text-xs text-gray-400 block">{calculateDaysDiff(c.entryDate)} dias atrás</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-600">
-                                            {c.lastMovementDate ? (
-                                                <>
-                                                    {formatDate(c.lastMovementDate)}
-                                                    <span className="text-xs text-gray-400 block">{calculateDaysDiff(c.lastMovementDate)} dias atrás</span>
-                                                </>
-                                            ) : '-'}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {c.category === 'Acolhidos' && c.lastReevaluationDate ? (
-                                                (() => {
-                                                    const daysSince = calculateDaysDiff(c.lastReevaluationDate);
-                                                    const isOverdue = daysSince > 90;
-                                                    return (
-                                                        <div className={`flex flex-col ${isOverdue ? 'text-red-600 font-bold' : 'text-green-600'}`}>
-                                                            <span>{formatDate(c.lastReevaluationDate)}</span>
-                                                            <span className="text-xs">{isOverdue ? `Venceu há ${daysSince - 90} dias` : `Em dia (${daysSince} dias)`}</span>
+                                        {activeCategory === 'Alvarás' ? (
+                                            <>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${c.expeditionStatus === 'dispatched'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-yellow-100 text-yellow-700'
+                                                        }`}>
+                                                        {c.expeditionStatus === 'dispatched' ? 'Expedido' : 'Pendente'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 font-mono text-sm text-gray-700">{c.caseNumber}</td>
+                                                <td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-3 h-3 rounded-full ${c.signatureServer ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                            <span className={`text-xs ${c.signatureServer ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>Servidor</span>
                                                         </div>
-                                                    );
-                                                })()
-                                            ) : c.deadlineDate ? (
-                                                <div className={`flex flex-col ${isExpired ? 'text-red-600 font-bold' : isNear ? 'text-orange-500 font-bold' : 'text-green-600'}`}>
-                                                    <span>{formatDate(c.deadlineDate)}</span>
-                                                    <span className="text-xs">{isExpired ? `Venceu há ${Math.abs(daysLeft!)} dias` : `Vence em ${daysLeft} dias`}</span>
-                                                </div>
-                                            ) : <span className="text-gray-400">-</span>}
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-500 max-w-[200px] truncate" title={c.obs}>{c.obs || '-'}</td>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-3 h-3 rounded-full ${c.signatureMagistrate ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                                                            <span className={`text-xs ${c.signatureMagistrate ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>Magistrado</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-600 font-mono">
+                                                    {c.subaccountId ? (
+                                                        <span className="bg-gray-100 px-2 py-1 rounded border border-gray-200">{c.subaccountId}</span>
+                                                    ) : '-'}
+                                                </td>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <td className="px-6 py-4">
+                                                    {(hasAdmin || (hasEdit && c.user_id === session.user.id)) ? (
+                                                        <button
+                                                            onClick={() => handleToggleConclusion(c)}
+                                                            className={`p-1.5 rounded-full transition-colors ${c.isConcluded ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                                                            title={c.isConcluded ? 'Reabrir Processo' : 'Concluir Processo'}
+                                                        >
+                                                            <CheckCircle size={20} className={c.isConcluded ? 'fill-current' : ''} />
+                                                        </button>
+                                                    ) : (
+                                                        <CheckCircle size={20} className={`text-gray-300 ${c.isConcluded ? 'fill-current text-green-300' : ''}`} />
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
+                                                <td className="px-6 py-4 text-gray-600">
+                                                    <div className="font-mono text-sm">{c.caseNumber}</div>
+                                                    {c.responsibleServer && (
+                                                        <div className="text-xs text-indigo-600 flex items-center gap-1 mt-1 font-medium bg-indigo-50 px-1.5 py-0.5 rounded w-fit">
+                                                            <User size={10} /> {c.responsibleServer}
+                                                        </div>
+                                                    )}
+                                                    {c.isDelegated && <span className="ml-2 px-1.5 py-0.5 text-[0.65rem] bg-indigo-100 text-indigo-700 rounded border border-indigo-200 uppercase font-bold tracking-wider">E-Prec</span>}
+                                                    {(c.category === 'RPV' || c.category === 'Precatório') && (
+                                                        <span className={`block w-fit mt-1 px-1.5 py-0.5 text-[0.65rem] rounded border uppercase font-bold tracking-wider ${c.expeditionStatus === 'dispatched' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'}`}>
+                                                            {c.expeditionStatus === 'dispatched' ? 'Expedido' : 'Pendente'}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-600">
+                                                    {formatDate(c.entryDate)}
+                                                    <span className="text-xs text-gray-400 block">{calculateDaysDiff(c.entryDate)} dias atrás</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-600">
+                                                    {c.lastMovementDate ? (
+                                                        <>
+                                                            {formatDate(c.lastMovementDate)}
+                                                            <span className="text-xs text-gray-400 block">{calculateDaysDiff(c.lastMovementDate)} dias atrás</span>
+                                                        </>
+                                                    ) : '-'}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {c.category === 'Acolhidos' && c.lastReevaluationDate ? (
+                                                        (() => {
+                                                            const daysSince = calculateDaysDiff(c.lastReevaluationDate);
+                                                            const isOverdue = daysSince > 90;
+                                                            return (
+                                                                <div className={`flex flex-col ${isOverdue ? 'text-red-600 font-bold' : 'text-green-600'}`}>
+                                                                    <span>{formatDate(c.lastReevaluationDate)}</span>
+                                                                    <span className="text-xs">{isOverdue ? `Venceu há ${daysSince - 90} dias` : `Em dia (${daysSince} dias)`}</span>
+                                                                </div>
+                                                            );
+                                                        })()
+                                                    ) : c.deadlineDate ? (
+                                                        <div className={`flex flex-col ${isExpired ? 'text-red-600 font-bold' : isNear ? 'text-orange-500 font-bold' : 'text-green-600'}`}>
+                                                            <span>{formatDate(c.deadlineDate)}</span>
+                                                            <span className="text-xs">{isExpired ? `Venceu há ${Math.abs(daysLeft!)} dias` : `Vence em ${daysLeft} dias`}</span>
+                                                        </div>
+                                                    ) : <span className="text-gray-400">-</span>}
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-500 max-w-[200px] truncate" title={c.obs}>{c.obs || '-'}</td>
+                                            </>
+                                        )}
+
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 {(hasAdmin || (hasEdit && c.user_id === session.user.id)) && (
