@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Scale, Menu, StickyNote, Gavel, FileText, UserCog, Edit, AlertTriangle, CalendarRange, Users } from 'lucide-react';
+import { LogOut, Scale, Menu, StickyNote, Gavel, FileText, UserCog, Edit, AlertTriangle, CalendarRange, Users, ShieldAlert } from 'lucide-react';
 import { useUserRole } from '../hooks/useUserRole';
 
 interface MainLayoutProps {
@@ -12,8 +12,8 @@ interface MainLayoutProps {
     appTitle: string;
     appSubtitle: string;
     onEditAppDetails: () => void;
-    activeModule: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team';
-    onModuleChange: (module: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team') => void;
+    activeModule: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team' | 'penhora';
+    onModuleChange: (module: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team' | 'penhora') => void;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
@@ -53,6 +53,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         { id: 'admin', label: 'Administrativo', icon: FileText, perm: 'administrative' },
         { id: 'rogatory', label: 'Carta Precatória', icon: UserCog, perm: 'rogatory' },
         { id: 'critical_issues', label: 'Pendências Críticas', icon: AlertTriangle, perm: 'critical_issues' },
+        { id: 'penhora', label: 'Penhora / Restrições', icon: ShieldAlert, perm: 'civil' }, // Using 'civil' permission for now or add new one
         { id: 'schedules', label: 'Audiências & Perícias', icon: CalendarRange, perm: 'schedules' },
         { id: 'team', label: 'Minha Equipe', icon: Users, perm: 'team' }, // Special case
     ] as const;

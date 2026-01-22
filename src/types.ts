@@ -50,6 +50,9 @@ export interface CivilCase {
   isConcluded?: boolean;
   concludedAt?: string | null;
   responsibleServer?: string;
+  signatureServer?: boolean;
+  signatureMagistrate?: boolean;
+  subaccountId?: string;
   user_id: string;
   deletedAt?: string | null;
 }
@@ -146,3 +149,22 @@ export interface PendingSchedule {
 }
 
 export type PendingScheduleFormData = Omit<PendingSchedule, 'id' | 'user_id' | 'status' | 'deletedAt'>;
+
+export interface PenhoraOrder {
+  id: string;
+  name: string;
+  caseNumber: string;
+  type: 'Sisbajud' | 'Renajud' | 'Infojud' | 'Siel' | 'Serasajud' | 'CNIB' | 'SNIPER';
+  value?: number;
+  lastUpdateDate?: string;
+  status: string; // 'Aguardando Protocolo' | 'Aguardando Resposta' | other
+  isTeimosinha?: boolean;
+  protocolDate?: string;
+  deadlineDate?: string;
+  restrictionType?: string; // 'Transferência' | 'Licenciamento' | 'Circulação'
+  obs?: string;
+  user_id: string;
+  deletedAt?: string | null;
+}
+
+export type PenhoraOrderFormData = Omit<PenhoraOrder, 'id' | 'user_id' | 'deletedAt'>;

@@ -51,26 +51,16 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
         setSuccess(null);
 
         try {
-            // First check if user exists in auth (simplified check, usually requires admin)
-            // Here we'll just try to add to user_roles via RPC or direct insert if policy allows
-            // Assuming we have a way to map email to ID, or we just invite?
-            // Since this is a custom simplified system, let's assume we use an RPC 'add_team_member' if it exists,
-            // OR we just assume the user is already signed up and we are just linking them.
-            // For now, let's use the 'invite_user_by_email' flow if available, or just alert.
+            const { data, error } = await supabase.rpc('add_team_member', {
+                target_email: email
+            });
 
-            // Reverting to the logic that was likely there:
-            // "O sistema atual não suporta convites por email diretamente nesta versão simplificada."
-            // But let's try to look up the user by email if possible.
+            if (error) throw error;
+            if (!data.success) throw new Error(data.message);
 
-            const { data: users, error: searchError } = await supabase
-                .from('user_roles') // This only finds EXISTING users in roles table. 
-            // We actually need to find 'auth.users'. Client can't query auth.users directly usually.
-            // Using a hypothetical RPC or assuming manual entry for now?
-            // Let's use a simple placeholder alert as this feature might not be fully implemented.
-            // However, the prompt implies "Minha Equipe" manages roles.
-
-            alert('Funcionalidade de convite será implementada em breve. Peça para o usuário criar uma conta primeiro.');
-
+            setSuccess(data.message);
+            setEmail('');
+            fetchTeam();
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -119,6 +109,54 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
                 <UserPlus className="text-justice-600" />
                 Gerenciar Equipe
             </h1>
+
+            {/* Add Member Form */}
+            {isAdmin && (
+                <form onSubmit={handleAddMember} className="mb-8 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <UserPlus size={20} className="text-justice-600" />
+                        Adicionar Novo Membro
+                    </h2>
+
+                    <div className="flex gap-4 items-end">
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Email do Usuário</label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <input
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="email@exemplo.com"
+                                    className="pl-10 w-full rounded-md border-gray-300 shadow-sm focus:border-justice-500 focus:ring-justice-500 py-2 border"
+                                />
+                            </div>
+                        </div>
+                        <Button type="submit" isLoading={isAdding} disabled={!email}>
+                            <Plus size={18} className="mr-2" />
+                            Adicionar Membro
+                        </Button>
+                    </div>
+
+                    {error && (
+                        <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md text-sm flex items-center gap-2">
+                            <AlertTriangle size={16} />
+                            {error}
+                        </div>
+                    )}
+
+                    {success && (
+                        <div className="mt-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
+                            {success}
+                        </div>
+                    )}
+
+                    <p className="mt-4 text-sm text-gray-500">
+                        * O usuário deve ter criado uma conta no sistema previamente para ser adicionado à equipe.
+                    </p>
+                </form>
+            )}
 
             {/* List */}
             <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">

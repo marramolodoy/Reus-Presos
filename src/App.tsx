@@ -12,9 +12,10 @@ import { LawyerDashboard } from './modules/Lawyer/LawyerDashboard';
 import { CriticalIssuesDashboard } from './modules/CriticalIssues/CriticalIssuesDashboard';
 import { SchedulesDashboard } from './modules/Schedules/SchedulesDashboard';
 import { TeamDashboard } from './modules/Team/TeamDashboard';
+import { PenhoraDashboard } from './modules/Penhora/PenhoraDashboard';
 
 // Types for Module Switcher
-type ModuleType = 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team';
+type ModuleType = 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team' | 'penhora';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -82,6 +83,8 @@ export default function App() {
         return <SchedulesDashboard session={session} />;
       case 'team':
         return <TeamDashboard session={session} />;
+      case 'penhora':
+        return <PenhoraDashboard session={session} />;
       default:
         return <CriminalDashboard session={session} courtName={courtName} />;
     }
