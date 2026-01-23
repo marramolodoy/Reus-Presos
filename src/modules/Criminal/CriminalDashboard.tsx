@@ -349,7 +349,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div>{d.movementType}</div>
-                                                <div className="text-xs text-gray-400">{formatDate(d.lastMovementDate)} ({calculateDaysDiff(d.lastMovementDate)} dias)</div>
+                                                <div className={`text-xs ${calculateDaysDiff(d.lastMovementDate) > d.deadline ? 'text-red-500 font-bold' : 'text-gray-400'}`}>{formatDate(d.lastMovementDate)} ({calculateDaysDiff(d.lastMovementDate)} dias)</div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div>{d.prison}</div>
