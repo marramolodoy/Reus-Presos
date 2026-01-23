@@ -88,10 +88,9 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
     const handleRemoveMember = async (userId: string, email: string) => {
         if (!confirm(`Remover acessos de ${email}?`)) return;
 
-        const { error } = await supabase
-            .from('user_roles')
-            .delete()
-            .eq('user_id', userId);
+        const { error } = await supabase.rpc('remove_team_member', {
+            target_id: userId
+        });
 
         if (error) {
             alert('Erro ao remover: ' + error.message);
@@ -215,7 +214,7 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => handleRemoveMember(member.user_id, member.email)}
-                                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition-all"
+                                        className="text-gray-400 hover:text-red-600 transition-all opacity-100"
                                         title="Remover acesso"
                                     >
                                         <Trash size={18} />

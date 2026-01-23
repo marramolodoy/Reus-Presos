@@ -16,7 +16,7 @@ const TABS = ['Sisbajud', 'Renajud', 'Infojud', 'Siel', 'Serasajud', 'CNIB', 'SN
 
 export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) => {
     const { checkPermission, isAdmin } = useUserRole(session);
-    const hasEdit = isAdmin; // Simplified permission for now or add 'penhora' to types later
+    const hasEdit = checkPermission('penhora', 'edit');
 
     const [orders, setOrders] = useState<PenhoraOrder[]>([]);
     const [loading, setLoading] = useState(true);
@@ -174,13 +174,17 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
 
             <tr key={order.id} className={`hover:bg-gray-50 transition-colors group ${order.isConcluded ? 'bg-gray-50/80' : ''}`}>
                 <td className="px-6 py-4">
-                    <button
-                        onClick={() => handleToggleConclusion(order)}
-                        className={`p-1.5 rounded-full transition-colors ${order.isConcluded ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
-                        title={order.isConcluded ? 'Reabrir Pedido' : 'Concluir Pedido'}
-                    >
-                        <CheckCircle size={20} className={order.isConcluded ? 'fill-current' : ''} />
-                    </button>
+                    {(hasEdit || isAdmin) ? (
+                        <button
+                            onClick={() => handleToggleConclusion(order)}
+                            className={`p-1.5 rounded-full transition-colors ${order.isConcluded ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
+                            title={order.isConcluded ? 'Reabrir Pedido' : 'Concluir Pedido'}
+                        >
+                            <CheckCircle size={20} className={order.isConcluded ? 'fill-current' : ''} />
+                        </button>
+                    ) : (
+                        <CheckCircle size={20} className={`text-gray-300 ${order.isConcluded ? 'fill-current text-green-300' : ''}`} />
+                    )}
                 </td>
                 <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${order.status === 'Aguardando Resposta' ? 'bg-orange-100 text-orange-700' :
@@ -245,8 +249,12 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
 
                 <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" onClick={() => { setEditingId(order.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(order.id, order.name)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
+                        {(hasEdit || isAdmin) && (
+                            <>
+                                <Button variant="ghost" size="icon" onClick={() => { setEditingId(order.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleDelete(order.id, order.name)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
+                            </>
+                        )}
                     </div>
                 </td>
             </tr>

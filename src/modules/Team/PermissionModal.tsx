@@ -9,16 +9,11 @@ interface PermissionModalProps {
     onSuccess: () => void;
 }
 
-const MODULES = [
-    { key: 'criminal', label: 'Criminal' },
-    { key: 'civil', label: 'Cível & Menores' },
-    { key: 'lawyer_requests', label: 'Req. Advogados' },
-    { key: 'sticky_notes', label: 'Mural de Avisos' },
-    { key: 'administrative', label: 'Administrativo' },
-    { key: 'rogatory', label: 'Cartas Precatórias' },
-    { key: 'schedules', label: 'Audiências & Perícias' },
-    { key: 'critical_issues', label: 'Pendências Críticas' },
-];
+import { APP_MODULES } from '../../constants';
+
+const MODULES = APP_MODULES
+    .filter(m => !m.adminOnly)
+    .map(m => ({ key: m.permissionKey, label: m.label }));
 
 const LEVELS = [
     { value: 'none', label: '🔴 Sem Acesso' },

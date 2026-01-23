@@ -14,8 +14,11 @@ import { SchedulesDashboard } from './modules/Schedules/SchedulesDashboard';
 import { TeamDashboard } from './modules/Team/TeamDashboard';
 import { PenhoraDashboard } from './modules/Penhora/PenhoraDashboard';
 
+import { APP_MODULES } from './constants';
+import { useUserRole } from './hooks/useUserRole';
+
 // Types for Module Switcher
-type ModuleType = 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team' | 'penhora';
+type ModuleType = typeof APP_MODULES[number]['id'];
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -51,6 +54,28 @@ export default function App() {
     }
   };
 
+  const { role, loading: loadingRole } = useUserRole(session);
+
+  useEffect(() => {
+    // "Original Settings" logic: If the user is independent (no entry in user_roles), 
+    // reset the custom branding to defaults.
+    if (!loadingRole && session) {
+      const checkOrphan = async () => {
+        const { data } = await supabase.from('user_roles').select('id').eq('user_id', session.user.id).single();
+        if (!data) {
+          console.log('Orphan user detected: Resetting branding to defaults');
+          localStorage.removeItem('court_name');
+          localStorage.removeItem('app_title');
+          localStorage.removeItem('app_subtitle');
+          setCourtName('Vara Única de Goianésia do Pará');
+          setAppTitle('Controle Unidade');
+          setAppSubtitle('Vara Única');
+        }
+      };
+      checkOrphan();
+    }
+  }, [loadingRole, session]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -61,7 +86,6 @@ export default function App() {
   }, []);
 
   if (loadingSession) return <div className="h-screen w-full flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-justice-600"></div></div>;
-  if (!session) return <AuthScreen onLogin={setSession} />;
 
   const renderModule = () => {
     switch (activeModule) {
@@ -91,18 +115,24 @@ export default function App() {
   };
 
   return (
-    <MainLayout
-      session={session}
-      onLogout={async () => { await supabase.auth.signOut(); setSession(null); }}
-      courtName={courtName}
-      onEditCourtName={handleEditCourtName}
-      appTitle={appTitle}
-      appSubtitle={appSubtitle}
-      onEditAppDetails={handleEditAppDetails}
-      activeModule={activeModule}
-      onModuleChange={setActiveModule}
-    >
-      {renderModule()}
-    </MainLayout>
+    <div id="app-container">
+      {!session ? (
+        <AuthScreen onLogin={setSession} />
+      ) : (
+        <MainLayout
+          session={session}
+          onLogout={async () => { await supabase.auth.signOut(); setSession(null); }}
+          courtName={courtName}
+          onEditCourtName={handleEditCourtName}
+          appTitle={appTitle}
+          appSubtitle={appSubtitle}
+          onEditAppDetails={handleEditAppDetails}
+          activeModule={activeModule}
+          onModuleChange={setActiveModule}
+        >
+          {renderModule()}
+        </MainLayout>
+      )}
+    </div>
   );
 }

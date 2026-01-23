@@ -434,7 +434,7 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                                         ) : (
                                             <>
                                                 <td className="px-6 py-4">
-                                                    {(hasAdmin || (hasEdit && c.user_id === session.user.id)) ? (
+                                                    {(hasAdmin || hasEdit) ? (
                                                         <button
                                                             onClick={() => handleToggleConclusion(c)}
                                                             className={`p-1.5 rounded-full transition-colors ${c.isConcluded ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
@@ -498,7 +498,7 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
 
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                {(hasAdmin || (hasEdit && c.user_id === session.user.id)) && (
+                                                {(hasAdmin || hasEdit) && (
                                                     <>
                                                         <Button variant="ghost" size="icon" onClick={() => { setEditingId(c.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
                                                         <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(c.id, c.name)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
