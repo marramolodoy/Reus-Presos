@@ -198,11 +198,11 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ initialData, initial
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             {formData.type === 'hearing' ? 'Data da Audiência' : 'Data da Perícia'}
-                            {formData.schedulingStatus === 'scheduled' && ' *'}
+                            {formData.schedulingStatus === 'scheduled' && formData.type === 'hearing' && ' *'}
                         </label>
                         <input
                             type="datetime-local"
-                            required={formData.schedulingStatus === 'scheduled'}
+                            required={formData.schedulingStatus === 'scheduled' && formData.type === 'hearing'}
                             disabled={formData.schedulingStatus === 'to_be_scheduled'}
                             className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-200 outline-none ${formData.schedulingStatus === 'to_be_scheduled' ? 'bg-gray-100 text-gray-400' : ''}`}
                             value={formData.scheduledDate || ''}
