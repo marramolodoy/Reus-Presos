@@ -4,7 +4,11 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-    throw new Error('Missing Supabase environment variables');
+    console.error('Missing Supabase environment variables. Please check your .env file.');
+    // Prevent crash by using placeholders. Authentication will fail, but the app will load.
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+export const supabase = createClient(
+    SUPABASE_URL || 'https://placeholder.supabase.co',
+    SUPABASE_KEY || 'placeholder'
+);

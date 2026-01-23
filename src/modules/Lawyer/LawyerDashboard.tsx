@@ -24,6 +24,9 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
     const [showConcluded, setShowConcluded] = useState(false); // Toggle to show concluded items
     const [sortBy, setSortBy] = useState('date_desc');
 
+    // New Tab State
+    const [activeTab, setActiveTab] = useState<'Secretaria' | 'Gabinete'>('Secretaria');
+
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; description: string; onConfirm: () => void; }>({
         isOpen: false, title: '', description: '', onConfirm: () => { }
     });
@@ -52,6 +55,7 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
                 requestDate: d.request_date,
                 isConcluded: d.is_concluded,
                 concludedAt: d.concluded_at,
+                destination: d.destination,
                 obs: d.obs,
                 user_id: d.user_id,
                 deletedAt: d.deleted_at
@@ -77,6 +81,7 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
             request_date: data.requestDate,
             is_concluded: data.isConcluded,
             concluded_at: data.isConcluded && !data.concludedAt ? new Date().toISOString() : (data.isConcluded ? data.concludedAt : null),
+            destination: data.destination,
             obs: data.obs,
             user_id: session.user.id
         };
@@ -140,8 +145,10 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
             // Requirement: "Acrescente também a funcionalidade de marcar que o pedido foi concluído (e crie um contabilizador que permita filtrar a quantidade de pedidos concluídos)"
             // I'll interpret this as a filter.
 
-            if (showConcluded) return matchesSearch && req.isConcluded;
-            return matchesSearch && !req.isConcluded;
+            const itemDestination = req.destination || 'Secretaria';
+
+            if (showConcluded) return matchesSearch && req.isConcluded && itemDestination === activeTab;
+            return matchesSearch && !req.isConcluded && itemDestination === activeTab;
         });
 
         return filtered.sort((a, b) => {
@@ -151,7 +158,7 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
             if (sortBy === 'name_desc') return b.name.localeCompare(a.name);
             return 0;
         });
-    }, [requests, searchTerm, showConcluded, sortBy]);
+    }, [requests, searchTerm, showConcluded, sortBy, activeTab]);
 
     const stats = useMemo(() => {
         const total = requests.length;
@@ -165,7 +172,7 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
         try {
             const doc = new jsPDF('p', 'mm', 'a4');
             const dateStr = new Date().toLocaleDateString('pt-BR');
-            const title = `Relatório de Requerimentos - ${showConcluded ? 'Concluídos' : 'Pendentes'}`;
+            const title = `Relatório de Requerimentos (${activeTab}) - ${showConcluded ? 'Concluídos' : 'Pendentes'}`;
 
             doc.setFontSize(14);
             doc.text(title, 14, 15);
@@ -229,6 +236,22 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
                         <span className="w-2 h-6 bg-blue-600 rounded-full"></span>
                         Requerimentos de Advogados
                     </h2>
+
+                    {/* Tabs */}
+                    <div className="flex bg-gray-200 p-1 rounded-lg">
+                        <button
+                            onClick={() => setActiveTab('Secretaria')}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Secretaria' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                        >
+                            Secretaria
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('Gabinete')}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'Gabinete' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'}`}
+                        >
+                            Gabinete
+                        </button>
+                    </div>
 
                     <div className="flex gap-2 w-full md:w-auto flex-wrap justify-end">
                         {/* Status Filter / Counter */}

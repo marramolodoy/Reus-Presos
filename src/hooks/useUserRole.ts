@@ -26,17 +26,38 @@ export function useUserRole(session: any) {
                     .single();
 
                 if (error || !data) {
-                    console.log('Role not found, defaulting to restricted');
-                    setRole('restricted');
-                    setPermissions({});
+                    console.log('Role not found, defaulting to independent admin');
+                    setRole('admin');
+                    // Grant full admin permissions to all standard modules for independent accounts
+                    setPermissions({
+                        criminal: 'admin',
+                        civil: 'admin',
+                        lawyer_requests: 'admin',
+                        sticky_notes: 'admin',
+                        administrative: 'admin',
+                        rogatory: 'admin',
+                        critical_issues: 'admin',
+                        penhora: 'admin',
+                        schedules: 'admin'
+                    });
                 } else {
                     setRole(data.role as UserRole);
                     setPermissions(data.permissions || {});
                 }
             } catch (err) {
                 console.error('Error fetching role:', err);
-                setRole('restricted');
-                setPermissions({});
+                setRole('admin');
+                setPermissions({
+                    criminal: 'admin',
+                    civil: 'admin',
+                    lawyer_requests: 'admin',
+                    sticky_notes: 'admin',
+                    administrative: 'admin',
+                    rogatory: 'admin',
+                    critical_issues: 'admin',
+                    penhora: 'admin',
+                    schedules: 'admin'
+                });
             } finally {
                 setLoading(false);
             }

@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { LogOut, Scale, Menu, StickyNote, Gavel, FileText, UserCog, Edit, AlertTriangle, CalendarRange, Users, ShieldAlert } from 'lucide-react';
 import { useUserRole } from '../hooks/useUserRole';
+import { APP_MODULES } from '../constants';
+
+// Derive ModuleId type
+type ModuleId = typeof APP_MODULES[number]['id'];
 
 interface MainLayoutProps {
     children: React.ReactNode;
     session: any;
-    // ... (rest unchanged)
     onLogout: () => void;
     courtName: string;
     onEditCourtName: () => void;
     appTitle: string;
     appSubtitle: string;
     onEditAppDetails: () => void;
-    activeModule: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team' | 'penhora';
-    onModuleChange: (module: 'criminal' | 'civil' | 'admin' | 'notes' | 'rogatory' | 'lawyer' | 'critical_issues' | 'schedules' | 'team' | 'penhora') => void;
+    activeModule: ModuleId;
+    onModuleChange: (module: ModuleId) => void;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
@@ -45,23 +48,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const navItemsRaw = [
-        { id: 'criminal', label: 'Criminal', icon: Gavel, perm: 'criminal' },
-        { id: 'civil', label: 'Cível & Menores', icon: Scale, perm: 'civil' },
-        { id: 'lawyer', label: 'Req. Advogados', icon: UserCog, perm: 'lawyer_requests' },
-        { id: 'notes', label: 'Avisos / Mural', icon: StickyNote, perm: 'sticky_notes' },
-        { id: 'admin', label: 'Administrativo', icon: FileText, perm: 'administrative' },
-        { id: 'rogatory', label: 'Carta Precatória', icon: UserCog, perm: 'rogatory' },
-        { id: 'critical_issues', label: 'Pendências Críticas', icon: AlertTriangle, perm: 'critical_issues' },
-        { id: 'penhora', label: 'Penhora / Restrições', icon: ShieldAlert, perm: 'civil' }, // Using 'civil' permission for now or add new one
-        { id: 'schedules', label: 'Audiências & Perícias', icon: CalendarRange, perm: 'schedules' },
-        { id: 'team', label: 'Minha Equipe', icon: Users, perm: 'team' }, // Special case
-    ] as const;
-
-    const navItems = navItemsRaw.filter(item => {
+    const navItems = APP_MODULES.filter(item => {
         if (loadingRole) return false;
-        if (item.id === 'team') return isAdmin;
-        return checkPermission(item.perm, 'view');
+        if (item.adminOnly) return isAdmin;
+        return checkPermission(item.permissionKey, 'view');
     });
 
     return (

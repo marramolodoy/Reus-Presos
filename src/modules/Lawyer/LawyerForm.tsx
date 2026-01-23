@@ -38,6 +38,7 @@ export const LawyerForm: React.FC<LawyerFormProps> = ({ initialData, onSubmit, o
             return `${year}-${month}-${day}`;
         })(),
         isConcluded: false,
+        destination: 'Secretaria',
         obs: ''
     });
 
@@ -51,6 +52,7 @@ export const LawyerForm: React.FC<LawyerFormProps> = ({ initialData, onSubmit, o
                 requestDate: initialData.requestDate ? initialData.requestDate.split('T')[0] : '',
                 isConcluded: initialData.isConcluded,
                 concludedAt: initialData.concludedAt,
+                destination: initialData.destination || 'Secretaria',
                 obs: initialData.obs || ''
             });
         }
@@ -135,6 +137,23 @@ export const LawyerForm: React.FC<LawyerFormProps> = ({ initialData, onSubmit, o
                                 className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${formData.matter === m ? 'bg-white shadow text-justice-700' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 {m}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Destino (Gabinete/Secretaria) */}
+                <div className="col-span-2 md:col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Destino</label>
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        {['Secretaria', 'Gabinete'].map(dest => (
+                            <button
+                                key={dest}
+                                type="button"
+                                onClick={() => setFormData({ ...formData, destination: dest as any })}
+                                className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${formData.destination === dest ? 'bg-white shadow text-blue-700' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                {dest}
                             </button>
                         ))}
                     </div>

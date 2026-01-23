@@ -23,7 +23,7 @@ export const CriticalIssueForm: React.FC<CriticalIssueFormProps> = ({ initialDat
             setFormData({
                 processNumber: initialData.processNumber,
                 defendantName: initialData.defendantName || '',
-                lastMovementDate: initialData.lastMovementDate,
+                lastMovementDate: initialData.lastMovementDate ? new Date(initialData.lastMovementDate).toISOString().split('T')[0] : '',
                 reason: initialData.reason,
                 responsibleServer: initialData.responsibleServer
             });

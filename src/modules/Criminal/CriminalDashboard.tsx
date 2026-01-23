@@ -358,13 +358,13 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex justify-end gap-2 relative z-10">
-                                                    {(hasAdminPerm || (hasEditPerm && d.user_id === session.user.id)) && (
+                                                    {(hasAdminPerm || hasEditPerm) && (
                                                         <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEdit(d); }} title="Editar">
                                                             <Edit size={16} className="text-blue-600" />
                                                         </Button>
                                                     )}
 
-                                                    {(hasAdminPerm || (hasEditPerm && d.user_id === session.user.id)) && (
+                                                    {(hasAdminPerm || hasEditPerm) && (
                                                         <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteClick(d.id, d.name); }} title="Excluir">
                                                             <Trash size={16} className="text-red-600" />
                                                         </Button>

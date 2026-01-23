@@ -109,6 +109,7 @@ export interface LawyerRequest {
   caseNumber: string; // Processo (Opcional)
   contactMethod: 'WhatsApp' | 'Email' | 'Telefone' | 'Presencial' | 'Balcão Virtual' | 'Outros';
   matter: 'Cível' | 'Criminal' | 'Outros';
+  destination: 'Gabinete' | 'Secretaria';
   requestDate: string;
   isConcluded: boolean;
   concludedAt?: string | null;
@@ -136,14 +137,18 @@ export type CriticalIssueFormData = Omit<CriticalIssue, 'id' | 'user_id' | 'stat
 export interface PendingSchedule {
   id: string;
   processNumber: string; // process_number
-  lastMovementDate: string; // last_movement_date
+  lastMovementDate?: string; // last_movement_date (Optional)
+  scheduledDate?: string; // scheduled_date (New: Data da Audiência/Perícia)
+  schedulingStatus?: 'scheduled' | 'to_be_scheduled'; // scheduling_status (New: "Audiência já designada" vs "Ainda a designar")
   subject: string;
   obs: string;
   type: 'hearing' | 'expertise';
   hearingType?: 'Conciliação' | 'Preliminar' | 'AIJ' | 'Continuação'; // hearing_type
   competence: 'Juizado' | 'Cível' | 'Criminal' | 'Delegada';
   expertiseType?: string; // expertise_type
-  status: 'pending' | 'resolved';
+  status: 'pending' | 'resolved'; // Status "Geral" (Ativo/Arquivado)
+  completionStatus?: 'pending' | 'partial' | 'completed'; // Status do Cumprimento (Cor)
+  tags?: string[]; // tags (List of tags like 'Réu Preso', 'Menor', etc.)
   user_id: string;
   deletedAt?: string | null; // deleted_at
 }
