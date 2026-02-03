@@ -17,7 +17,9 @@ interface SchedulesDashboardProps {
 }
 
 export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session }) => {
-    const { canDelete, canEdit } = useUserRole(session);
+    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const hasEdit = checkPermission('schedules', 'edit');
+    const hasAdmin = checkPermission('schedules', 'admin');
     const [schedules, setSchedules] = useState<PendingSchedule[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -43,6 +45,7 @@ export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session 
             .from('pending_schedules')
             .select('*')
             .is('deleted_at', null)
+            .eq('user_id', teamOwnerId || session.user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -90,7 +93,7 @@ export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session 
             status: 'pending',
             completion_status: data.completionStatus || 'pending',
             tags: data.tags || [],
-            user_id: session.user.id
+            user_id: teamOwnerId || session.user.id,
         };
 
         if (editingId) {
@@ -408,10 +411,10 @@ export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session 
                                                     >
                                                         {i.status === 'resolved' ? <RefreshCw size={16} /> : <CheckCircle size={16} />}
                                                     </Button>
-                                                    {canEdit && (
+                                                    {hasEdit && (
                                                         <Button variant="ghost" size="icon" onClick={() => { setEditingId(i.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
                                                     )}
-                                                    {canDelete && (
+                                                    {hasAdmin && (
                                                         <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(i.id, i.processNumber)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
                                                     )}
                                                 </div>

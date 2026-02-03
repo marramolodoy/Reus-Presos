@@ -3,6 +3,7 @@ import { Upload, X, Save } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 import { AdministrativeDocument } from '../../types';
+import { useUserRole } from '../../hooks/useUserRole';
 
 interface AdminFormProps {
     onClose: () => void;
@@ -12,6 +13,7 @@ interface AdminFormProps {
 }
 
 export const AdminForm: React.FC<AdminFormProps> = ({ onClose, onSuccess, session, initialData }) => {
+    const { teamOwnerId } = useUserRole(session);
     const [availableOptions, setAvailableOptions] = useState<{ next: string, gaps: string[] }>({ next: '...', gaps: [] });
     const [selectedNumberMode, setSelectedNumberMode] = useState<'next' | 'gap'>('next');
     const [loading, setLoading] = useState(false);
@@ -129,7 +131,7 @@ export const AdminForm: React.FC<AdminFormProps> = ({ onClose, onSuccess, sessio
                 const fileName = `${Math.random()}.${fileExt}`;
                 const { error: uploadError, data } = await supabase.storage
                     .from('documents')
-                    .upload(`${session.user.id}/${fileName}`, file);
+                    .upload(`${teamOwnerId || session.user.id}/${fileName}`, file);
 
                 if (uploadError) throw uploadError;
 
@@ -167,7 +169,7 @@ export const AdminForm: React.FC<AdminFormProps> = ({ onClose, onSuccess, sessio
                         issuer: formData.issuer,
                         document_type: formData.documentType,
                         file_path: filePath,
-                        user_id: session.user.id
+                        user_id: teamOwnerId || session.user.id
                     }]);
 
                 if (dbError) throw dbError;

@@ -15,8 +15,9 @@ interface PenhoraDashboardProps {
 const TABS = ['Sisbajud', 'Renajud', 'Infojud', 'Siel', 'Serasajud', 'CNIB', 'SNIPER'] as const;
 
 export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) => {
-    const { checkPermission, isAdmin } = useUserRole(session);
+    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
     const hasEdit = checkPermission('penhora', 'edit');
+    const hasAdmin = checkPermission('penhora', 'admin');
 
     const [orders, setOrders] = useState<PenhoraOrder[]>([]);
     const [loading, setLoading] = useState(true);
@@ -34,6 +35,7 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
             .from('penhora_orders')
             .select('*')
             .is('deleted_at', null)
+            .eq('user_id', teamOwnerId || session.user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -79,7 +81,7 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
             deadline_date: data.deadlineDate || null,
             restriction_type: data.restrictionType,
             obs: data.obs,
-            user_id: session.user.id
+            user_id: teamOwnerId || session.user.id
         };
 
         if (editingId) {
@@ -174,25 +176,22 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
 
             <tr key={order.id} className={`hover:bg-gray-50 transition-colors group ${order.isConcluded ? 'bg-gray-50/80' : ''}`}>
                 <td className="px-6 py-4">
-                    {(hasEdit || isAdmin) ? (
-                        <button
-                            onClick={() => handleToggleConclusion(order)}
-                            className={`p-1.5 rounded-full transition-colors ${order.isConcluded ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
-                            title={order.isConcluded ? 'Reabrir Pedido' : 'Concluir Pedido'}
-                        >
-                            <CheckCircle size={20} className={order.isConcluded ? 'fill-current' : ''} />
-                        </button>
-                    ) : (
-                        <CheckCircle size={20} className={`text-gray-300 ${order.isConcluded ? 'fill-current text-green-300' : ''}`} />
-                    )}
-                </td>
-                <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${order.status === 'Aguardando Resposta' ? 'bg-orange-100 text-orange-700' :
-                        order.status === 'Aguardando Protocolo' ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-700'
-                        }`}>
-                        {order.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${order.status === 'Aguardando Resposta' ? 'bg-orange-100 text-orange-700' :
+                            order.status === 'Aguardando Protocolo' ? 'bg-blue-100 text-blue-700' :
+                                'bg-gray-100 text-gray-700'
+                            }`}>
+                            {order.status}
+                        </span>
+                        {order.isConcluded && (
+                            <>
+                                <span className="text-gray-400">→</span>
+                                <span className="px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-green-100 text-green-700">
+                                    Concluído
+                                </span>
+                            </>
+                        )}
+                    </div>
                 </td>
                 <td className="px-6 py-4 font-medium text-gray-900">{order.name}</td>
                 <td className="px-6 py-4 text-gray-600 font-mono text-sm">{order.caseNumber}</td>
@@ -249,8 +248,17 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
 
                 <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {(hasEdit || isAdmin) && (
+                        {(hasEdit || hasAdmin) && (
                             <>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleToggleConclusion(order)}
+                                    className={`transition-colors ${order.isConcluded ? 'text-green-600 hover:bg-green-100' : 'text-gray-400 hover:bg-gray-100'}`}
+                                    title={order.isConcluded ? 'Reabrir' : 'Concluir'}
+                                >
+                                    <CheckCircle size={18} className={order.isConcluded ? 'fill-current' : ''} />
+                                </Button>
                                 <Button variant="ghost" size="icon" onClick={() => { setEditingId(order.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(order.id, order.name)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
                             </>
@@ -345,11 +353,11 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
                                 <option value="value_desc">Maior Valor</option>
                             </select>
                         </div>
-
-                        <Button variant="outline-danger" onClick={() => setIsTrashOpen(true)} title="Lixeira">
-                            <ArchiveRestore size={18} />
-                        </Button>
-
+                        {(hasEdit || hasAdmin) && (
+                            <Button variant="outline-danger" onClick={() => setIsTrashOpen(true)} title="Lixeira">
+                                <ArchiveRestore size={18} />
+                            </Button>
+                        )}
                         <Button onClick={() => { setEditingId(null); setIsFormOpen(true); }} leftIcon={Plus} className="shadow">
                             Novo
                         </Button>
@@ -360,8 +368,7 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
                     <table className="w-full text-left text-sm">
                         <thead className="bg-gray-50 text-gray-500 font-semibold uppercase text-xs border-b">
                             <tr>
-                                <th className="px-6 py-4">Controle</th>
-                                <th className="px-6 py-4">Situação</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Situação</th>
                                 <th className="px-6 py-4">Nome / Parte</th>
                                 <th className="px-6 py-4">Processo</th>
                                 {activeTab === 'Sisbajud' && (

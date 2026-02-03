@@ -35,7 +35,9 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
         responsibleServer: '',
         signatureServer: false,
         signatureMagistrate: false,
-        subaccountId: ''
+        subaccountId: '',
+        isConcluded: false,
+        concludedAt: null
     });
 
     useEffect(() => {
@@ -55,6 +57,8 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
                 signatureServer: initialData.signatureServer || false,
                 signatureMagistrate: initialData.signatureMagistrate || false,
                 subaccountId: initialData.subaccountId || '',
+                isConcluded: initialData.isConcluded || false,
+                concludedAt: initialData.concludedAt || null,
             });
         }
     }, [initialData]);
@@ -73,6 +77,29 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
             }
         }
     }, [formData.category, formData.entryDate]);
+
+    // Automate Alvarás Status based on signatures
+    useEffect(() => {
+        if (formData.category === 'Alvarás') {
+            const hasServer = formData.signatureServer;
+            const hasMagistrate = formData.signatureMagistrate;
+
+            const newStatus = hasServer ? 'dispatched' : 'pending';
+            const newIsConcluded = hasServer && hasMagistrate;
+            const newConcludedAt = newIsConcluded ? (formData.concludedAt || new Date().toISOString()) : null;
+
+            if (formData.expeditionStatus !== newStatus ||
+                formData.isConcluded !== newIsConcluded ||
+                formData.concludedAt !== newConcludedAt) {
+                setFormData(prev => ({
+                    ...prev,
+                    expeditionStatus: newStatus as any,
+                    isConcluded: newIsConcluded,
+                    concludedAt: newConcludedAt
+                }));
+            }
+        }
+    }, [formData.signatureServer, formData.signatureMagistrate, formData.category]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -214,31 +241,18 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
                             </div>
 
                             <div className="border-t border-amber-200 pt-3">
-                                <label className="block text-sm font-medium text-amber-900 mb-2">Situação da Expedição</label>
-                                <div className="flex gap-4">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="expeditionStatus"
-                                            value="pending"
-                                            checked={formData.expeditionStatus === 'pending' || !formData.expeditionStatus}
-                                            onChange={() => setFormData({ ...formData, expeditionStatus: 'pending' })}
-                                            className="text-amber-600 focus:ring-amber-500"
-                                        />
-                                        <span className="text-sm text-gray-700">Pendente</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="expeditionStatus"
-                                            value="dispatched"
-                                            checked={formData.expeditionStatus === 'dispatched'}
-                                            onChange={() => setFormData({ ...formData, expeditionStatus: 'dispatched' })}
-                                            className="text-amber-600 focus:ring-amber-500"
-                                        />
-                                        <span className="text-sm text-gray-700">Expedido</span>
-                                    </label>
+                                <label className="block text-sm font-medium text-amber-900 mb-1">Situação da Expedição</label>
+                                <div className="flex items-center gap-2">
+                                    <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${formData.expeditionStatus === 'dispatched' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                        {formData.expeditionStatus === 'dispatched' ? 'Expedido' : 'Pendente'}
+                                    </span>
+                                    {formData.isConcluded && (
+                                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider">
+                                            Concluído
+                                        </span>
+                                    )}
                                 </div>
+                                <p className="text-[10px] text-amber-600 mt-1 italic">* Automático: Expedido se Servidor assinar, Concluído se ambos assinarem.</p>
                             </div>
 
                             <div className="border-t border-amber-200 pt-3">

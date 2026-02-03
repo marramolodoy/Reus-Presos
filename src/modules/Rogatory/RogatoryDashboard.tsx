@@ -4,8 +4,16 @@ import { RogatoryLetter } from '../../types';
 import { Plus, Search, Mail, Edit, Trash2, Calendar, MapPin, User, FileText, AlertCircle, Gavel, Lock } from 'lucide-react';
 import { RogatoryForm } from './RogatoryForm';
 import { calculateDaysUntil } from '../../utils';
+import { useUserRole } from '../../hooks/useUserRole';
 
-export const RogatoryDashboard: React.FC<{ session: any }> = ({ session }) => {
+interface RogatoryDashboardProps {
+    session: any;
+}
+
+export const RogatoryDashboard: React.FC<RogatoryDashboardProps> = ({ session }) => {
+    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const hasEdit = checkPermission('rogatory', 'edit');
+    const hasAdmin = checkPermission('rogatory', 'admin');
     const [letters, setLetters] = useState<RogatoryLetter[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeDirection, setActiveDirection] = useState<'incoming' | 'outgoing'>('incoming');
@@ -21,6 +29,7 @@ export const RogatoryDashboard: React.FC<{ session: any }> = ({ session }) => {
             .from('rogatory_letters')
             .select('*')
             .is('deleted_at', null)
+            .eq('user_id', teamOwnerId || session.user.id)
             .order('received_date', { ascending: false });
 
         if (error) {
@@ -41,7 +50,7 @@ export const RogatoryDashboard: React.FC<{ session: any }> = ({ session }) => {
                 hasHearing: d.has_hearing,
                 hearingDate: d.hearing_date,
                 isPrisoner: d.is_prisoner,
-                user_id: d.user_id,
+                user_id: teamOwnerId || session.user.id,
             })));
         }
         setLoading(false);
@@ -268,20 +277,24 @@ export const RogatoryDashboard: React.FC<{ session: any }> = ({ session }) => {
                                     </div>
 
                                     <div className="flex gap-1 mt-2">
-                                        <button
-                                            onClick={() => { setEditingLetter(letter); setIsFormOpen(true); }}
-                                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                            title="Editar"
-                                        >
-                                            <Edit size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(letter.id)}
-                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                            title="Excluir"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
+                                        {hasEdit && (
+                                            <button
+                                                onClick={() => { setEditingLetter(letter); setIsFormOpen(true); }}
+                                                className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                                title="Editar"
+                                            >
+                                                <Edit size={18} />
+                                            </button>
+                                        )}
+                                        {hasAdmin && (
+                                            <button
+                                                onClick={() => handleDelete(letter.id)}
+                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                title="Excluir"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>

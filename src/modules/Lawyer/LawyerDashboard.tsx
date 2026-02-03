@@ -15,6 +15,9 @@ interface LawyerDashboardProps {
 }
 
 export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => {
+    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const hasEdit = checkPermission('lawyer_requests', 'edit');
+    const hasAdmin = checkPermission('lawyer_requests', 'admin');
     const [requests, setRequests] = useState<LawyerRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -39,6 +42,7 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
             .from('lawyer_requests')
             .select('*')
             .is('deleted_at', null)
+            .eq('user_id', teamOwnerId || session.user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -83,7 +87,7 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
             concluded_at: data.isConcluded && !data.concludedAt ? new Date().toISOString() : (data.isConcluded ? data.concludedAt : null),
             destination: data.destination,
             obs: data.obs,
-            user_id: session.user.id
+            user_id: teamOwnerId || session.user.id
         };
 
         if (editingId) {
@@ -356,16 +360,24 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
                                     </td>
                                     <td className="px-6 py-4 text-gray-500 max-w-[250px] truncate" title={req.obs}>{req.obs || '-'}</td>
                                     <td className="px-6 py-4 text-right">
-                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => handleToggleConclusion(req)}
-                                                className={`p-1 rounded ${req.isConcluded ? 'text-yellow-600 hover:bg-yellow-100' : 'text-green-600 hover:bg-green-100'}`}
-                                                title={req.isConcluded ? 'Reabrir' : 'Concluir'}
-                                            >
-                                                {req.isConcluded ? <Clock size={16} /> : <CheckCircle size={16} />}
-                                            </button>
-                                            <button onClick={() => { setEditingId(req.id); setIsFormOpen(true); }} className="p-1 text-blue-600 hover:bg-blue-100 rounded" title="Editar"><Edit size={16} /></button>
-                                            <button onClick={() => handleDeleteClick(req.id, req.name)} className="p-1 text-red-600 hover:bg-red-100 rounded" title="Excluir"><Trash size={16} /></button>
+                                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {hasEdit && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleToggleConclusion(req)}
+                                                    className={req.isConcluded ? "text-gray-400 hover:text-gray-600" : "text-green-600 hover:bg-green-100"}
+                                                    title={req.isConcluded ? 'Reabrir' : 'Concluir'}
+                                                >
+                                                    {req.isConcluded ? <RefreshCw size={16} /> : <CheckCircle size={16} />}
+                                                </Button>
+                                            )}
+                                            {hasEdit && (
+                                                <Button variant="ghost" size="icon" onClick={() => { setEditingId(req.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100" title="Editar"><Edit size={16} /></Button>
+                                            )}
+                                            {hasAdmin && (
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(req.id, req.name)} className="text-red-600 hover:bg-red-100" title="Excluir"><Trash size={16} /></Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
