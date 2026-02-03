@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { SeiRequest } from '../../types';
+import { useUserRole } from '../../hooks/useUserRole';
 
 interface SeiRequestFormProps {
     onClose: () => void;
@@ -11,6 +12,7 @@ interface SeiRequestFormProps {
 }
 
 export const SeiRequestForm: React.FC<SeiRequestFormProps> = ({ onClose, onSuccess, session, initialData }) => {
+    const { teamOwnerId } = useUserRole(session);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         processNumber: initialData?.processNumber || '',
@@ -35,7 +37,7 @@ export const SeiRequestForm: React.FC<SeiRequestFormProps> = ({ onClose, onSucce
                 current_sector: formData.currentSector,
                 responsible_server: formData.responsibleServer,
                 status: formData.status,
-                user_id: session.user.id
+                user_id: teamOwnerId || session.user.id
             };
 
             if (initialData) {

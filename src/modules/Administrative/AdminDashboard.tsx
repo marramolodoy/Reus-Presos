@@ -17,6 +17,9 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const hasEdit = checkPermission('administrative', 'edit');
+    const hasAdmin = checkPermission('administrative', 'admin');
     // Docs State
     const [docs, setDocs] = useState<AdministrativeDocument[]>([]);
     const [isDocFormOpen, setIsDocFormOpen] = useState(false);
@@ -43,6 +46,7 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
             .from('administrative_documents')
             .select('*')
             .is('deleted_at', null)
+            .eq('user_id', teamOwnerId || session.user.id)
             .order('created_at', { ascending: false });
 
         if (docsError) console.error('Error fetching docs:', docsError);
@@ -62,6 +66,7 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
             .from('sei_requests')
             .select('*')
             .is('deleted_at', null)
+            .eq('user_id', teamOwnerId || session.user.id)
             .order('last_movement_date', { ascending: true }); // Oldest movement first (stalled)
 
         if (seiError) console.error('Error fetching SEI:', seiError);
@@ -316,8 +321,8 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
                                             </button>
                                         )}
                                         <div className="flex gap-1 ml-auto">
-                                            <button onClick={() => { setEditingSei(sei); setIsSeiFormOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit size={18} /></button>
-                                            <button onClick={() => handleDeleteSei(sei.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={18} /></button>
+                                            {hasEdit && <button onClick={() => { setEditingSei(sei); setIsSeiFormOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit size={18} /></button>}
+                                            {hasAdmin && <button onClick={() => handleDeleteSei(sei.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={18} /></button>}
                                         </div>
                                     </div>
                                 </div>

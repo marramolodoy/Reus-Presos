@@ -17,7 +17,9 @@ interface CriticalIssuesDashboardProps {
 }
 
 export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = ({ session }) => {
-    const { canDelete, canEdit } = useUserRole(session);
+    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const hasEdit = checkPermission('critical_issues', 'edit');
+    const hasAdmin = checkPermission('critical_issues', 'admin');
     const [issues, setIssues] = useState<CriticalIssue[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -41,6 +43,7 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
             .from('critical_issues')
             .select('*')
             .is('deleted_at', null)
+            .eq('user_id', teamOwnerId || session.user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -75,7 +78,7 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
             reason: data.reason,
             responsible_server: data.responsibleServer,
             status: 'pending', // Default status
-            user_id: session.user.id
+            user_id: teamOwnerId || session.user.id
         };
 
         if (editingId) {
@@ -236,7 +239,7 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
                         </div>
 
                         <Button variant="outline" onClick={generatePDF} leftIcon={Download}>PDF</Button>
-                        {canDelete && (
+                        {hasAdmin && (
                             <Button variant="outline-danger" onClick={() => setIsTrashOpen(true)} title="Lixeira">
                                 <Trash size={18} />
                             </Button>
@@ -327,10 +330,10 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
                                             >
                                                 {i.status === 'resolved' ? <RefreshCw size={16} /> : <CheckCircle size={16} />}
                                             </Button>
-                                            {canEdit && (
+                                            {hasEdit && (
                                                 <Button variant="ghost" size="icon" onClick={() => { setEditingId(i.id); setIsFormOpen(true); }} className="text-blue-600 hover:bg-blue-100"><Edit size={16} /></Button>
                                             )}
-                                            {canDelete && (
+                                            {hasAdmin && (
                                                 <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(i.id, i.processNumber)} className="text-red-600 hover:bg-red-100"><Trash size={16} /></Button>
                                             )}
                                         </div>

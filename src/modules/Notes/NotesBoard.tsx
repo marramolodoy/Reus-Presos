@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import { Plus, X, Trash2, Save, Download, Palette, FileDown, Pin, Edit, ArchiveRestore } from 'lucide-react';
 import { NotesTrashModal } from './NotesTrashModal';
 import { supabase } from '../../lib/supabase';
+import { useUserRole } from '../../hooks/useUserRole';
 
 interface Note {
     id: string;
@@ -86,6 +87,7 @@ const getRGB = (colorStr: string): [number, number, number] => {
 };
 
 export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
+    const { teamOwnerId } = useUserRole(session);
     const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
@@ -127,6 +129,7 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
         const { data, error } = await supabase
             .from('sticky_notes')
             .select('*')
+            .eq('user_id', teamOwnerId || session.user.id)
             .is('deleted_at', null)
             .order('is_pinned', { ascending: false })
             .order('created_at', { ascending: false });
@@ -183,7 +186,7 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
                 title: editingNote.title || 'Sem título',
                 content: editingNote.content || '',
                 color: editingNote.color || COLORS[0],
-                user_id: session.user.id,
+                user_id: teamOwnerId || session.user.id,
                 author: editingNote.author,
                 is_pinned: editingNote.is_pinned || false
             };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { RogatoryLetter } from '../../types';
+import { useUserRole } from '../../hooks/useUserRole';
 
 interface RogatoryFormProps {
     onClose: () => void;
@@ -12,6 +13,7 @@ interface RogatoryFormProps {
 }
 
 export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, session, initialData, defaultDirection = 'incoming' }) => {
+    const { teamOwnerId } = useUserRole(session);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         caseNumber: initialData?.caseNumber || '',
@@ -59,7 +61,7 @@ export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, 
                 has_hearing: formData.hasHearing,
                 hearing_date: formData.hasHearing && formData.hearingDate ? new Date(formData.hearingDate).toISOString() : null,
                 is_prisoner: formData.type === 'criminal' ? formData.isPrisoner : false,
-                user_id: session.user.id
+                user_id: teamOwnerId || session.user.id
             };
 
             if (initialData) {
