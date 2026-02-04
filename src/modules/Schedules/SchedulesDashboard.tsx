@@ -45,13 +45,13 @@ export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session 
             .from('pending_schedules')
             .select('*')
             .is('deleted_at', null)
-            .eq('user_id', teamOwnerId || session.user.id)
+
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Erro ao buscar:', error);
         } else {
-            setSchedules(data.map((d: any) => ({
+            setSchedules((data || []).map((d: any) => ({
                 id: d.id,
                 processNumber: d.process_number,
                 lastMovementDate: d.last_movement_date,
@@ -75,7 +75,7 @@ export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session 
 
     useEffect(() => {
         if (session) fetchSchedules();
-    }, [session]);
+    }, [session, teamOwnerId]);
 
     const handleSave = async (data: PendingScheduleFormData) => {
         if (!session) return;

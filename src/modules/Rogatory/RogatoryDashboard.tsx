@@ -29,13 +29,13 @@ export const RogatoryDashboard: React.FC<RogatoryDashboardProps> = ({ session })
             .from('rogatory_letters')
             .select('*')
             .is('deleted_at', null)
-            .eq('user_id', teamOwnerId || session.user.id)
+
             .order('received_date', { ascending: false });
 
         if (error) {
             console.error('Error fetching letters:', error);
         } else {
-            setLetters(data.map((d: any) => ({
+            setLetters((data || []).map((d: any) => ({
                 id: d.id,
                 caseNumber: d.case_number,
                 direction: d.direction || 'incoming',
@@ -57,8 +57,8 @@ export const RogatoryDashboard: React.FC<RogatoryDashboardProps> = ({ session })
     };
 
     useEffect(() => {
-        fetchLetters();
-    }, [session]);
+        if (session) fetchLetters();
+    }, [session, teamOwnerId]);
 
     const handleDelete = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir esta carta precatória?')) return;

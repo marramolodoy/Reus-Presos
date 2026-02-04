@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Calendar, AlertCircle } from 'lucide-react';
-import { CivilCase, CivilCaseFormData, CivilCategory } from '../../types';
+import { CivilCase, CivilCaseFormData, CivilCategory, UserProfile } from '../../types';
 import { Button } from '../../components/ui/Button';
+import { supabase } from '../../lib/supabase';
 
 interface CivilFormProps {
     initialData?: CivilCase;
@@ -15,6 +16,16 @@ import { CIVIL_CATEGORIES } from '../../constants';
 const CATEGORIES = CIVIL_CATEGORIES;
 
 export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCategory, onSubmit, onCancel }) => {
+    const [profiles, setProfiles] = useState<UserProfile[]>([]);
+
+    useEffect(() => {
+        const fetchProfiles = async () => {
+            const { data } = await supabase.from('user_profiles').select('*');
+            if (data) setProfiles(data);
+        };
+        fetchProfiles();
+    }, []);
+
     const [formData, setFormData] = useState<CivilCaseFormData>({
         name: '',
         caseNumber: '',
@@ -101,13 +112,33 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
         }
     }, [formData.signatureServer, formData.signatureMagistrate, formData.category]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const dataToSubmit = { ...formData };
         // Ensure pending status for RPV/Precatório if not set
         if ((dataToSubmit.category === 'RPV' || dataToSubmit.category === 'Precatório') && !dataToSubmit.expeditionStatus) {
             dataToSubmit.expeditionStatus = 'pending';
         }
+
+        // Notification Logic
+        // Check if responsible server changed or is new
+        const initialResponsible = initialData?.responsibleServer;
+        const newResponsible = dataToSubmit.responsibleServer;
+
+        if (newResponsible && newResponsible !== initialResponsible) {
+            const assignedProfile = profiles.find(p => p.name === newResponsible);
+            if (assignedProfile) {
+                // Send notification
+                await supabase.from('notifications').insert({
+                    user_id: assignedProfile.user_id,
+                    title: 'Processo Atribuído',
+                    message: `Você foi definido como responsável pelo processo ${dataToSubmit.caseNumber} (${dataToSubmit.name})`,
+                    link: '/civil', // Ideally link to specific item
+                    read: false
+                });
+            }
+        }
+
         onSubmit(dataToSubmit);
     };
 
@@ -323,13 +354,16 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
                 {/* Servidor Responsável */}
                 <div className="col-span-2 md:col-span-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Servidor Responsável</label>
-                    <input
-                        type="text"
+                    <select
                         className="w-full p-2 border rounded focus:ring-2 focus:ring-justice-500 outline-none"
                         value={formData.responsibleServer || ''}
                         onChange={e => setFormData({ ...formData, responsibleServer: e.target.value })}
-                        placeholder="Nome do servidor"
-                    />
+                    >
+                        <option value="">Selecione um servidor</option>
+                        {profiles.map(profile => (
+                            <option key={profile.user_id} value={profile.name}>{profile.name}</option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* Obs */}

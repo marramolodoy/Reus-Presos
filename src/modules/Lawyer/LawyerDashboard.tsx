@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useUserRole } from '../../hooks/useUserRole';
 import { Plus, Search, Edit, Trash, Download, FileText, ArchiveRestore, CheckCircle, Clock } from 'lucide-react';
 import { LawyerRequest, LawyerRequestFormData } from '../../types';
 import { LawyerForm } from './LawyerForm';
@@ -50,7 +51,7 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
             // Fallback empty if table doesn't exist yet
             setRequests([]);
         } else {
-            setRequests(data.map((d: any) => ({
+            setRequests((data || []).map((d: any) => ({
                 id: d.id,
                 name: d.name,
                 caseNumber: d.case_number,
@@ -69,8 +70,8 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
     };
 
     useEffect(() => {
-        fetchRequests();
-    }, [session]);
+        if (session) fetchRequests();
+    }, [session, teamOwnerId]);
 
     // Create / Update
     const handleSave = async (data: LawyerRequestFormData) => {
