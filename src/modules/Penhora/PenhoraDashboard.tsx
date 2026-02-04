@@ -35,13 +35,13 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
             .from('penhora_orders')
             .select('*')
             .is('deleted_at', null)
-            .eq('user_id', teamOwnerId || session.user.id)
+
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error fetching orders:', error);
         } else {
-            setOrders(data?.map((d: any) => ({
+            setOrders((data || []).map((d: any) => ({
                 id: d.id,
                 name: d.name,
                 caseNumber: d.case_number,
@@ -59,14 +59,14 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
                 deletedAt: d.deleted_at,
                 isConcluded: d.is_concluded,
                 concludedAt: d.concluded_at
-            })) || []);
+            })));
         }
         setLoading(false);
     };
 
     useEffect(() => {
-        fetchOrders();
-    }, [session]);
+        if (session) fetchOrders();
+    }, [session, teamOwnerId]);
 
     const handleSave = async (data: PenhoraOrderFormData) => {
         const payload = {
@@ -106,8 +106,7 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
 
         if (error) alert('Erro ao excluir: ' + error.message);
         else await fetchOrders();
-        if (error) alert('Erro ao excluir: ' + error.message);
-        else await fetchOrders();
+
     };
 
     const handleToggleConclusion = async (order: PenhoraOrder) => {

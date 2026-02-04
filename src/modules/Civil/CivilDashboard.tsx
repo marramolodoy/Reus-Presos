@@ -52,7 +52,7 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
         if (error) {
             alert('Erro ao carregar dados: ' + error.message);
         } else {
-            setCases(data.map((d: any) => ({
+            setCases((data || []).map((d: any) => ({
                 id: d.id,
                 name: d.name,
                 caseNumber: d.case_number,
@@ -79,7 +79,7 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
 
     useEffect(() => {
         fetchCases();
-    }, [session]);
+    }, [session, teamOwnerId]);
 
     const handleSave = async (data: CivilCaseFormData) => {
         if (!session) return;

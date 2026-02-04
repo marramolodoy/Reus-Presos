@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LogOut, Scale, Menu, StickyNote, Gavel, FileText, UserCog, Edit, AlertTriangle, CalendarRange, Users, ShieldAlert } from 'lucide-react';
 import { useUserRole } from '../hooks/useUserRole';
+import { NotificationCenter } from '../components/NotificationCenter';
 import { APP_MODULES } from '../constants';
 
 // Derive ModuleId type
@@ -146,8 +147,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                         </h2>
                     </div>
 
-                    <div className="text-xs md:text-sm font-medium text-gray-500 hidden sm:block">
-                        {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    <div className="flex items-center">
+                        <NotificationCenter session={session} />
+                        <div className="text-xs md:text-sm font-medium text-gray-500 hidden sm:block">
+                            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </div>
                     </div>
                 </header>
 

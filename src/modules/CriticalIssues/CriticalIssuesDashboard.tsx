@@ -43,14 +43,14 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
             .from('critical_issues')
             .select('*')
             .is('deleted_at', null)
-            .eq('user_id', teamOwnerId || session.user.id)
+
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Erro ao buscar:', error);
             // alert('Erro ao carregar dados: ' + error.message);
         } else {
-            setIssues(data.map((d: any) => ({
+            setIssues((data || []).map((d: any) => ({
                 id: d.id,
                 processNumber: d.process_number,
                 defendantName: d.defendant_name,
@@ -67,7 +67,7 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
 
     useEffect(() => {
         if (session) fetchIssues();
-    }, [session]);
+    }, [session, teamOwnerId]);
 
     const handleSave = async (data: CriticalIssueFormData) => {
         if (!session) return;

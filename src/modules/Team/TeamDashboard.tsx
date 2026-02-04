@@ -25,17 +25,32 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+
     const [permissionModal, setPermissionModal] = useState<{ isOpen: boolean; user: any | null }>({ isOpen: false, user: null });
+    const [profileModal, setProfileModal] = useState<{ isOpen: boolean; user: any | null }>({ isOpen: false, user: null });
+    const [profilingName, setProfilingName] = useState('');
 
     const fetchTeam = async () => {
         setLoading(true);
-        const { data, error } = await supabase.rpc('get_my_team');
+        // We use a custom query or strict RPC. Here ensuring we get profile names too if joined.
+        // Since get_my_team probably handles auth.users, we might need to join user_profiles manually or update get_my_team RPC.
+        // For now, let's fetch profiles separately and merge them on client side if needed, OR better:
+        // Let's assume we update the RPC later or do a direct join here?
+        // Let's do a direct join approach for simplicity if permissions allow, OR fetch profiles:
 
-        if (error) {
-            console.error('Error fetching team:', error);
+        const { data: teamData, error: teamError } = await supabase.rpc('get_my_team');
+        const { data: profilesData } = await supabase.from('user_profiles').select('user_id, name');
+
+        if (teamError) {
+            console.error('Error fetching team:', teamError);
             setError('Erro ao carregar equipe.');
         } else {
-            setTeam(data || []);
+            // Merge profiles
+            const mergedTeam = (teamData || []).map((member: any) => {
+                const profile = profilesData?.find((p: any) => p.user_id === member.user_id);
+                return { ...member, name: profile?.name || '' };
+            });
+            setTeam(mergedTeam);
         }
         setLoading(false);
     };
@@ -96,6 +111,25 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
             alert('Erro ao remover: ' + error.message);
         } else {
             fetchTeam();
+        }
+    };
+
+    const handleUpdateProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const { error } = await supabase
+                .from('user_profiles')
+                .upsert({
+                    user_id: profileModal.user.user_id,
+                    name: profilingName
+                });
+
+            if (error) throw error;
+
+            setProfileModal({ isOpen: false, user: null });
+            fetchTeam();
+        } catch (err: any) {
+            alert('Erro ao atualizar perfil: ' + err.message);
         }
     };
 
@@ -205,6 +239,13 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
                                             </button>
 
                                             <span className="text-gray-400 ml-2">Entrou em {new Date(member.joined_at).toLocaleDateString()}</span>
+
+                                            <button
+                                                onClick={() => { setProfileModal({ isOpen: true, user: member }); setProfilingName(member.name || ''); }}
+                                                className="ml-2 text-[10px] text-blue-600 hover:underline"
+                                            >
+                                                {member.name ? `Alias: ${member.name}` : '+ Definir Nome'}
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -233,6 +274,32 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
                     targetUser={permissionModal.user}
                     onSuccess={fetchTeam}
                 />
+            )}
+
+            {/* Profile Modal */}
+            {profileModal.isOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+                        <h3 className="text-lg font-bold mb-4">Definir Nome (Alias)</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Defina o nome de exibição para <b>{profileModal.user?.email}</b>. Este nome será usado para atribuição de tarefas e notificações.
+                        </p>
+                        <form onSubmit={handleUpdateProfile}>
+                            <input
+                                type="text"
+                                className="w-full border rounded p-2 mb-4"
+                                placeholder="Ex: Wendel"
+                                value={profilingName}
+                                onChange={e => setProfilingName(e.target.value)}
+                                autoFocus
+                            />
+                            <div className="flex justify-end gap-2">
+                                <button type="button" onClick={() => setProfileModal({ isOpen: false, user: null })} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
+                                <button type="submit" className="px-4 py-2 bg-justice-600 text-white rounded hover:bg-justice-700">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -173,3 +173,19 @@ export interface PenhoraOrder {
 }
 
 export type PenhoraOrderFormData = Omit<PenhoraOrder, 'id' | 'user_id' | 'deletedAt'>;
+
+export interface UserProfile {
+  user_id: string;
+  name: string;
+  department?: string;
+}
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  created_at: string;
+}

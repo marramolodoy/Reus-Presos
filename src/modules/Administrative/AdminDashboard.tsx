@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { AdministrativeDocument, SeiRequest } from '../../types';
 
+import { useUserRole } from '../../hooks/useUserRole';
 import { Plus, Search, FileText, Download, Trash2, Filter, Edit, ArchiveRestore, Clock, Copy, AlertTriangle } from 'lucide-react';
 import { AdminForm } from './AdminForm';
 import { AdminExportModal } from './AdminExportModal';
@@ -46,11 +47,11 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
             .from('administrative_documents')
             .select('*')
             .is('deleted_at', null)
-            .eq('user_id', teamOwnerId || session.user.id)
+
             .order('created_at', { ascending: false });
 
         if (docsError) console.error('Error fetching docs:', docsError);
-        else setDocs(docsData.map((d: any) => ({
+        else setDocs((docsData || []).map((d: any) => ({
             id: d.id,
             number: d.number,
             subject: d.subject,
@@ -66,11 +67,11 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
             .from('sei_requests')
             .select('*')
             .is('deleted_at', null)
-            .eq('user_id', teamOwnerId || session.user.id)
+
             .order('last_movement_date', { ascending: true }); // Oldest movement first (stalled)
 
         if (seiError) console.error('Error fetching SEI:', seiError);
-        else setSeiRequests(seiData.map((d: any) => ({
+        else setSeiRequests((seiData || []).map((d: any) => ({
             id: d.id,
             processNumber: d.process_number,
             subject: d.subject,
@@ -86,8 +87,8 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
     };
 
     useEffect(() => {
-        fetchData();
-    }, [session]);
+        if (session) fetchData();
+    }, [session, teamOwnerId]);
 
     // --- Docs Logic ---
     const confirmDeleteDoc = (doc: AdministrativeDocument) => {

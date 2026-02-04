@@ -66,14 +66,14 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
             .from('defendants')
             .select('*')
             .is('deleted_at', null)
-            .eq('user_id', teamOwnerId || session.user.id)
+
             .order('created_at', { ascending: false });
 
         if (error) {
             console.error('Erro ao buscar:', error);
             alert('Erro ao carregar dados: ' + error.message);
         } else {
-            setDefendants(data.map((d: any) => ({
+            setDefendants((data || []).map((d: any) => ({
                 id: d.id, name: d.name, caseNumber: d.case_number, penalType: d.penal_type,
                 prisonType: d.prison_type || 'Preventiva',
                 arrestDate: d.arrest_date, lastReviewDate: d.last_review_date,
@@ -88,7 +88,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
 
     useEffect(() => {
         if (session) fetchDefendants();
-    }, [session]);
+    }, [session, teamOwnerId]);
 
     const handleSave = async (data: DefendantFormData) => {
         if (!session || !session.user) return;

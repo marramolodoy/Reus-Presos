@@ -129,7 +129,7 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
         const { data, error } = await supabase
             .from('sticky_notes')
             .select('*')
-            .eq('user_id', teamOwnerId || session.user.id)
+
             .is('deleted_at', null)
             .order('is_pinned', { ascending: false })
             .order('created_at', { ascending: false });
