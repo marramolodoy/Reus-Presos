@@ -188,6 +188,10 @@ export interface AppNotification {
   link?: string;
   read: boolean;
   created_at: string;
+  isConcluded?: boolean;
+  concludedAt?: string | null;
+  seizureDate?: string | null;
+  hasCourtCase?: boolean;
 }
 
 export interface SeizedAsset {
@@ -200,6 +204,8 @@ export interface SeizedAsset {
   destinationStatus: string;
   isConcluded?: boolean;
   concludedAt?: string | null;
+  seizureDate?: string;
+  hasCourtCase?: boolean;
   user_id: string;
   deletedAt?: string | null;
 }
