@@ -13,6 +13,7 @@ import { CriticalIssuesDashboard } from './modules/CriticalIssues/CriticalIssues
 import { SchedulesDashboard } from './modules/Schedules/SchedulesDashboard';
 import { TeamDashboard } from './modules/Team/TeamDashboard';
 import { PenhoraDashboard } from './modules/Penhora/PenhoraDashboard';
+import { SeizedAssetsDashboard } from './modules/SeizedAssets/SeizedAssetsDashboard';
 
 import { APP_MODULES } from './constants';
 import { useUserRole } from './hooks/useUserRole';
@@ -109,6 +110,8 @@ export default function App() {
         return <TeamDashboard session={session} />;
       case 'penhora':
         return <PenhoraDashboard session={session} />;
+      case 'seized_assets':
+        return <SeizedAssetsDashboard session={session} />;
       default:
         return <CriminalDashboard session={session} courtName={courtName} />;
     }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, X, Save } from 'lucide-react';
+import { Upload, X, Save, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 import { AdministrativeDocument } from '../../types';
@@ -184,6 +184,40 @@ export const AdminForm: React.FC<AdminFormProps> = ({ onClose, onSuccess, sessio
         }
     };
 
+    const handleRemoveFile = async () => {
+        if (!initialData?.filePath) return;
+        if (!confirm('Tem certeza que deseja apagar o arquivo anexo?')) return;
+
+        setLoading(true);
+        try {
+            // Remove from Storage
+            const { error: storageError } = await supabase.storage.from('documents').remove([initialData.filePath]);
+            if (storageError) console.error('Error removing from storage:', storageError); // Soft error
+
+            // Update DB record
+            const { error: dbError } = await supabase
+                .from('administrative_documents')
+                .update({ file_path: null })
+                .eq('id', initialData.id);
+
+            if (dbError) throw dbError;
+
+            // Update Local State
+            setFile(null);
+            // We can't easily update initialData inside the parent without refetching, 
+            // but we can trigger success to refresh list.
+            // For this modal state, we'll just hide the file UI.
+            initialData.filePath = undefined; // Hacky local update for UI reflection or force close
+
+            onSuccess(); // Refresh parent list
+            alert('Arquivo removido com sucesso!');
+        } catch (error: any) {
+            alert('Erro ao remover arquivo: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -292,6 +326,16 @@ export const AdminForm: React.FC<AdminFormProps> = ({ onClose, onSuccess, sessio
                             </span>
                             <span className="text-xs text-gray-400">PDF até 10MB {initialData?.filePath && '(Atual mantido se não selecionar novo)'}</span>
                         </label>
+
+                        {initialData?.filePath && !file && (
+                            <button
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); handleRemoveFile(); }}
+                                className="mt-2 text-xs text-red-600 hover:text-red-800 flex items-center justify-center gap-1 w-full p-2 hover:bg-red-50 rounded transition-colors"
+                            >
+                                <Trash2 size={12} /> Remover Arquivo Atual
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex justify-end pt-4 gap-2">
