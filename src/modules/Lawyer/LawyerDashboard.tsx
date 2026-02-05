@@ -139,15 +139,9 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
 
     // Filters
     const filteredRequests = useMemo(() => {
-        return requests.filter(req => {
+        const filtered = requests.filter(req => {
             const matchesSearch = req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (req.caseNumber && req.caseNumber.includes(searchTerm));
-
-            // If showConcluded is false, show ONLY pending.
-            // If showConcluded is true, show ALL (pending + concluded) or maybe just concluded?
-            // Usually "Archived" toggle implies showing them.
-            // Requirement: "Acrescente também a funcionalidade de marcar que o pedido foi concluído (e crie um contabilizador que permita filtrar a quantidade de pedidos concluídos)"
-            // I'll interpret this as a filter.
 
             const itemDestination = req.destination || 'Secretaria';
 
