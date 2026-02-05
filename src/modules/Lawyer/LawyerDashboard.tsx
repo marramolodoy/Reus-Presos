@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useUserRole } from '../../hooks/useUserRole';
-import { Plus, Search, Edit, Trash, Download, FileText, ArchiveRestore, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Search, Edit, Trash, Download, FileText, ArchiveRestore, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { LawyerRequest, LawyerRequestFormData } from '../../types';
 import { LawyerForm } from './LawyerForm';
 import { supabase } from '../../lib/supabase';
