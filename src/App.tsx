@@ -21,6 +21,8 @@ import { useUserRole } from './hooks/useUserRole';
 // Types for Module Switcher
 type ModuleType = typeof APP_MODULES[number]['id'];
 
+import { SpeedInsights } from "@vercel/speed-insights/react";
+
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [loadingSession, setLoadingSession] = useState(true);
@@ -136,6 +138,7 @@ export default function App() {
           {renderModule()}
         </MainLayout>
       )}
+      <SpeedInsights />
     </div>
   );
 }
