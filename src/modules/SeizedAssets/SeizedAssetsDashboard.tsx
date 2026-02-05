@@ -44,6 +44,8 @@ export const SeizedAssetsDashboard: React.FC<{ session: any }> = ({ session }) =
                 destinationStatus: d.destination_status,
                 isConcluded: d.is_concluded,
                 concludedAt: d.concluded_at,
+                seizureDate: d.seizure_date,
+                hasCourtCase: d.has_court_case,
                 user_id: d.user_id
             })));
         }
@@ -226,19 +228,30 @@ export const SeizedAssetsDashboard: React.FC<{ session: any }> = ({ session }) =
                                     <span className="flex items-center gap-1 text-gray-500" title="Localização">
                                         <MapPin size={14} /> {asset.location}
                                     </span>
-                                    {asset.processNumber && (
-                                        <span className="bg-gray-100 px-2 py-0.5 rounded font-mono text-gray-700">
-                                            {asset.processNumber}
-                                        </span>
-                                    )}
+                                    <div className="flex gap-2">
+                                        {asset.seizureDate && (
+                                            <span className="flex items-center gap-1 text-gray-500" title="Data da Apreensão">
+                                                <Clock size={12} /> {new Date(asset.seizureDate).toLocaleDateString()}
+                                            </span>
+                                        )}
+                                        {asset.hasCourtCase && asset.processNumber ? (
+                                            <span className="bg-gray-100 px-2 py-0.5 rounded font-mono text-gray-700">
+                                                {asset.processNumber}
+                                            </span>
+                                        ) : (
+                                            !asset.hasCourtCase && <span className="bg-orange-50 text-orange-700 px-2 py-0.5 rounded text-[10px] font-medium border border-orange-100">
+                                                Depol
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="pt-3 border-t flex justify-between items-center">
                                 <span className={`text-xs px-2 py-1 rounded-full font-bold ${asset.destinationStatus === 'Aguardando' ? 'bg-yellow-100 text-yellow-700' :
-                                        asset.destinationStatus === 'Encaminhado' ? 'bg-blue-100 text-blue-700' :
-                                            asset.destinationStatus === 'Devolvido' ? 'bg-green-100 text-green-700' :
-                                                'bg-gray-100 text-gray-700'
+                                    asset.destinationStatus === 'Encaminhado' ? 'bg-blue-100 text-blue-700' :
+                                        asset.destinationStatus === 'Devolvido' ? 'bg-green-100 text-green-700' :
+                                            'bg-gray-100 text-gray-700'
                                     }`}>
                                     {asset.destinationStatus}
                                 </span>

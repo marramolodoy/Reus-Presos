@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, Calendar, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { SeizedAsset } from '../../types';
 import { useUserRole } from '../../hooks/useUserRole';
@@ -21,6 +21,8 @@ export const SeizedAssetsForm: React.FC<SeizedAssetsFormProps> = ({ onClose, onS
         description: initialData?.description || '',
         location: initialData?.location || '',
         destinationStatus: initialData?.destinationStatus || 'Aguardando',
+        seizureDate: initialData?.seizureDate ? new Date(initialData.seizureDate).toISOString().split('T')[0] : '',
+        hasCourtCase: initialData?.hasCourtCase !== undefined ? initialData.hasCourtCase : true
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -29,12 +31,14 @@ export const SeizedAssetsForm: React.FC<SeizedAssetsFormProps> = ({ onClose, onS
 
         try {
             const dataToSave = {
-                process_number: formData.processNumber,
+                process_number: formData.hasCourtCase ? formData.processNumber : null,
                 party_name: formData.partyName,
                 possible_owner: formData.possibleOwner,
                 description: formData.description,
                 location: formData.location,
                 destination_status: formData.destinationStatus,
+                seizure_date: formData.seizureDate || null,
+                has_court_case: formData.hasCourtCase,
                 user_id: teamOwnerId || session.user.id
             };
 
@@ -71,6 +75,31 @@ export const SeizedAssetsForm: React.FC<SeizedAssetsFormProps> = ({ onClose, onS
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+                                <Calendar size={14} /> Data da Apreensão
+                            </label>
+                            <input
+                                type="date"
+                                className="w-full p-2 border rounded focus:ring-2 focus:ring-justice-200 outline-none"
+                                value={formData.seizureDate}
+                                onChange={e => setFormData({ ...formData, seizureDate: e.target.value })}
+                            />
+                        </div>
+                        <div className="flex items-end pb-3">
+                            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 font-medium">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.hasCourtCase}
+                                    onChange={e => setFormData({ ...formData, hasCourtCase: e.target.checked })}
+                                    className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                                />
+                                Já possui processo no PJe?
+                            </label>
+                        </div>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Parte (Réu/Indiciado) *</label>
                         <input
@@ -83,13 +112,15 @@ export const SeizedAssetsForm: React.FC<SeizedAssetsFormProps> = ({ onClose, onS
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
+                        <div className={!formData.hasCourtCase ? 'opacity-50 pointer-events-none' : ''}>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Nº Processo</label>
                             <input
                                 type="text"
                                 className="w-full p-2 border rounded focus:ring-2 focus:ring-justice-200 outline-none"
                                 value={formData.processNumber}
                                 onChange={e => setFormData({ ...formData, processNumber: e.target.value })}
+                                disabled={!formData.hasCourtCase}
+                                placeholder={!formData.hasCourtCase ? 'Sem processo' : ''}
                             />
                         </div>
                         <div>
