@@ -20,8 +20,27 @@ export const CivilForm: React.FC<CivilFormProps> = ({ initialData, defaultCatego
 
     useEffect(() => {
         const fetchProfiles = async () => {
-            const { data } = await supabase.from('user_profiles').select('*');
-            if (data) setProfiles(data);
+            // First get the team members
+            const { data: teamMembers, error: teamError } = await supabase.rpc('get_my_team');
+
+            if (teamError) {
+                console.error('Error fetching team:', teamError);
+                return;
+            }
+
+            const teamIds = (teamMembers || []).map((m: any) => m.user_id);
+
+            if (teamIds.length > 0) {
+                // Then fetch profiles only for these users
+                const { data } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .in('user_id', teamIds);
+
+                if (data) setProfiles(data);
+            } else {
+                setProfiles([]);
+            }
         };
         fetchProfiles();
     }, []);
