@@ -43,7 +43,6 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
             .from('lawyer_requests')
             .select('*')
             .is('deleted_at', null)
-            .eq('user_id', teamOwnerId || session.user.id)
             .order('created_at', { ascending: false });
 
         if (error) {

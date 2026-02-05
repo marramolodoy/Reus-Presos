@@ -18,6 +18,7 @@ export const APP_MODULES = [
     { id: 'notes', label: 'Avisos / Mural', icon: StickyNote, permissionKey: 'sticky_notes' },
     { id: 'admin', label: 'Administrativo', icon: FileText, permissionKey: 'administrative' },
     { id: 'rogatory', label: 'Carta Precatória', icon: UserCog, permissionKey: 'rogatory' },
+    { id: 'seized_assets', label: 'Bens Apreendidos', icon: Gavel, permissionKey: 'seized_assets' },
     { id: 'critical_issues', label: 'Pendências Críticas', icon: AlertTriangle, permissionKey: 'critical_issues' },
     { id: 'penhora', label: 'Penhora / Restrições', icon: ShieldAlert, permissionKey: 'penhora' },
     { id: 'schedules', label: 'Audiências & Perícias', icon: CalendarRange, permissionKey: 'schedules' },

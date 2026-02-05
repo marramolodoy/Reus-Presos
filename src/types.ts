@@ -189,3 +189,19 @@ export interface AppNotification {
   read: boolean;
   created_at: string;
 }
+
+export interface SeizedAsset {
+  id: string;
+  processNumber?: string;
+  partyName: string;
+  possibleOwner?: string;
+  description: string;
+  location: string;
+  destinationStatus: string;
+  isConcluded?: boolean;
+  concludedAt?: string | null;
+  user_id: string;
+  deletedAt?: string | null;
+}
+
+export type SeizedAssetFormData = Omit<SeizedAsset, 'id' | 'user_id' | 'deletedAt'>;

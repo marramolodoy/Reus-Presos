@@ -46,7 +46,6 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
             .from('civil_cases')
             .select('*')
             .is('deleted_at', null)
-            .eq('user_id', teamOwnerId || session.user.id)
             .order('created_at', { ascending: false });
 
         if (error) {
