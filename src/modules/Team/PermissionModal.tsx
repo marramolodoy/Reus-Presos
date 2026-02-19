@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 interface PermissionModalProps {
     isOpen: boolean;
     onClose: () => void;
-    targetUser: { id: string; email: string; permissions: any };
+    targetUser: { user_id: string; email: string; permissions: any };
     onSuccess: () => void;
 }
 
@@ -35,8 +35,8 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({ isOpen, onClos
     const handleSave = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase.rpc('update_user_permissions', {
-                target_user_id: targetUser.id,
+            const { data, error } = await supabase.rpc('update_user_permissions_v2', {
+                target_user_id: targetUser.user_id,
                 new_permissions: permissions
             });
 

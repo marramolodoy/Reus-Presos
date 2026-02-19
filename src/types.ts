@@ -18,6 +18,7 @@ export interface Defendant {
   hearingDate?: string; // Data da audiência
   linkedDefendantIds?: string[]; // IDs de réus linkados
   user_id?: string;
+  unit_id?: string;
   deleted_at?: string | null;
 }
 
@@ -54,6 +55,7 @@ export interface CivilCase {
   signatureMagistrate?: boolean;
   subaccountId?: string;
   user_id: string;
+  unit_id?: string;
   deletedAt?: string | null;
 }
 
@@ -67,6 +69,7 @@ export interface AdministrativeDocument {
   filePath?: string; // Path in Storage Bucket
   deletedAt?: string | null; // Soft Delete
   user_id: string;
+  unit_id?: string;
 }
 
 export interface RogatoryLetter {
@@ -85,6 +88,7 @@ export interface RogatoryLetter {
   hearingDate?: string;
   isPrisoner?: boolean;
   user_id: string;
+  unit_id?: string;
   deletedAt?: string | null;
 }
 
@@ -98,6 +102,7 @@ export interface SeiRequest {
   responsibleServer: string;
   status: string;
   user_id: string;
+  unit_id?: string;
   deletedAt?: string | null;
 }
 
@@ -115,6 +120,7 @@ export interface LawyerRequest {
   concludedAt?: string | null;
   obs?: string;
   user_id: string;
+  unit_id?: string;
   deletedAt?: string | null;
 }
 
@@ -129,6 +135,7 @@ export interface CriticalIssue {
   responsibleServer: string;
   status: 'pending' | 'resolved';
   user_id: string;
+  unit_id?: string;
   deletedAt?: string | null;
 }
 
@@ -150,6 +157,7 @@ export interface PendingSchedule {
   completionStatus?: 'pending' | 'partial' | 'completed'; // Status do Cumprimento (Cor)
   tags?: string[]; // tags (List of tags like 'Réu Preso', 'Menor', etc.)
   user_id: string;
+  unit_id?: string;
   deletedAt?: string | null; // deleted_at
 }
 
@@ -169,6 +177,7 @@ export interface PenhoraOrder {
   restrictionType?: string; // 'Transferência' | 'Licenciamento' | 'Circulação'
   obs?: string;
   user_id: string;
+  unit_id?: string;
   deletedAt?: string | null;
 }
 
@@ -207,6 +216,7 @@ export interface SeizedAsset {
   seizureDate?: string;
   hasCourtCase?: boolean;
   user_id: string;
+  unit_id?: string;
   deletedAt?: string | null;
 }
 

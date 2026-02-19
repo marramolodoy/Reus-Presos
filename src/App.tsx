@@ -36,7 +36,7 @@ export default function App() {
   const [appSubtitle, setAppSubtitle] = useState(() => localStorage.getItem('app_subtitle') || 'Vara Única');
 
   // Get Role AND Unit
-  const { role, unit, loading: loadingRole } = useUserRole(session);
+  const { role, unit, unitId, loading: loadingRole } = useUserRole(session);
 
   // Load Unit Settings from Supabase
   useEffect(() => {
@@ -61,9 +61,6 @@ export default function App() {
             setAppSubtitle(data.app_subtitle);
             localStorage.setItem('app_subtitle', data.app_subtitle);
           }
-        } else if (!error) {
-          // If no settings exist yet for this unit, we could optionally create them here or just wait for the first edit.
-          // For now, let's just stick to defaults/localStorage.
         }
       };
       fetchSettings();
@@ -84,6 +81,7 @@ export default function App() {
       if (unit) {
         await supabase.from('unit_settings').upsert({
           unit,
+          unit_id: unitId, // Add unit_id for future proofing
           court_name: newName,
           updated_at: new Date().toISOString()
         }, { onConflict: 'unit' });
@@ -112,6 +110,7 @@ export default function App() {
         if (unit) {
           await supabase.from('unit_settings').upsert({
             unit,
+            unit_id: unitId, // Add unit_id for future proofing
             app_title: titleToSave,
             app_subtitle: subtitleToSave,
             updated_at: new Date().toISOString()
