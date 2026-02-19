@@ -205,12 +205,16 @@ export const RogatoryDashboard: React.FC<RogatoryDashboardProps> = ({ session })
                                                 const isExpired = daysLeft < 0;
                                                 const isOutgoing = letter.direction === 'outgoing';
 
+                                                // Safe date format: YYYY-MM-DD -> DD/MM/YYYY
+                                                const [year, month, day] = letter.deadlineDate.split('-');
+                                                const formattedDate = `${day}/${month}/${year}`;
+
                                                 return (
                                                     <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${isExpired ? 'bg-red-100 text-red-700 font-bold border border-red-200' : 'text-orange-600 bg-orange-50'}`}>
                                                         {isExpired ? <AlertCircle size={12} /> : <Calendar size={12} />}
                                                         {isExpired
                                                             ? (isOutgoing ? 'COBRAR ANDAMENTO' : 'VENCIDO')
-                                                            : `${isOutgoing ? 'Cobrar em: ' : 'Prazo: '} ${new Date(letter.deadlineDate).toLocaleDateString()}`
+                                                            : `${isOutgoing ? 'Cobrar em: ' : 'Prazo: '} ${formattedDate}`
                                                         }
                                                     </span>
                                                 );
@@ -273,7 +277,13 @@ export const RogatoryDashboard: React.FC<RogatoryDashboardProps> = ({ session })
                                 <div className="flex flex-row md:flex-col justify-between md:justify-start items-end gap-2 border-t md:border-t-0 pt-4 md:pt-0">
                                     <div className="text-xs text-gray-400 text-right">
                                         <div>{letter.direction === 'outgoing' ? 'Enviado em' : 'Recebido em'}</div>
-                                        <div>{new Date(letter.receivedDate).toLocaleDateString()}</div>
+                                        <div>
+                                            {(() => {
+                                                if (!letter.receivedDate) return '-';
+                                                const [year, month, day] = letter.receivedDate.split('-');
+                                                return `${day}/${month}/${year}`;
+                                            })()}
+                                        </div>
                                     </div>
 
                                     <div className="flex gap-1 mt-2">
