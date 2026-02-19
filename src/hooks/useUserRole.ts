@@ -8,6 +8,7 @@ export function useUserRole(session: any) {
     const [role, setRole] = useState<UserRole>(null);
     const [permissions, setPermissions] = useState<Record<string, PermissionLevel>>({});
     const [teamOwnerId, setTeamOwnerId] = useState<string | null>(null);
+    const [unit, setUnit] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -15,6 +16,7 @@ export function useUserRole(session: any) {
             setRole(null);
             setPermissions({});
             setTeamOwnerId(null);
+            setUnit(null);
             setLoading(false);
             return;
         }
@@ -24,7 +26,7 @@ export function useUserRole(session: any) {
                 // 1. Fetch User Role
                 const { data: roleData, error: roleError } = await supabase
                     .from('user_roles')
-                    .select('role, permissions')
+                    .select('role, permissions, unit')
                     .eq('user_id', session.user.id)
                     .single();
 
@@ -43,9 +45,11 @@ export function useUserRole(session: any) {
                         schedules: 'admin'
                     });
                     setTeamOwnerId(session.user.id);
+                    setUnit(null);
                 } else {
                     setRole(roleData.role as UserRole);
                     setPermissions(roleData.permissions || {});
+                    setUnit(roleData.unit);
 
                     // 2. Fetch Team to find Owner (Admin)
                     const { data: teamData, error: teamError } = await supabase.rpc('get_my_team');
@@ -78,5 +82,5 @@ export function useUserRole(session: any) {
         return levels.indexOf(userLevel) >= levels.indexOf(requiredLevel);
     };
 
-    return { role, permissions, teamOwnerId, isAdmin, canDelete, canEdit, checkPermission, loading };
+    return { role, permissions, teamOwnerId, unit, isAdmin, canDelete, canEdit, checkPermission, loading };
 }
