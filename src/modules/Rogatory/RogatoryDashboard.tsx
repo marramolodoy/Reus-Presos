@@ -272,7 +272,7 @@ export const RogatoryDashboard: React.FC<RogatoryDashboardProps> = ({ session })
 
                                 <div className="flex flex-row md:flex-col justify-between md:justify-start items-end gap-2 border-t md:border-t-0 pt-4 md:pt-0">
                                     <div className="text-xs text-gray-400 text-right">
-                                        <div>Recebido em</div>
+                                        <div>{letter.direction === 'outgoing' ? 'Enviado em' : 'Recebido em'}</div>
                                         <div>{new Date(letter.receivedDate).toLocaleDateString()}</div>
                                     </div>
 

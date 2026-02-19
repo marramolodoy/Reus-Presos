@@ -35,29 +35,91 @@ export default function App() {
   const [appTitle, setAppTitle] = useState(() => localStorage.getItem('app_title') || 'Controle Unidade');
   const [appSubtitle, setAppSubtitle] = useState(() => localStorage.getItem('app_subtitle') || 'Vara Única');
 
-  const handleEditCourtName = () => {
+  // Get Role AND Unit
+  const { role, unit, loading: loadingRole } = useUserRole(session);
+
+  // Load Unit Settings from Supabase
+  useEffect(() => {
+    if (unit && session) {
+      const fetchSettings = async () => {
+        const { data, error } = await supabase
+          .from('unit_settings')
+          .select('court_name, app_title, app_subtitle')
+          .eq('unit', unit)
+          .single();
+
+        if (data) {
+          if (data.court_name) {
+            setCourtName(data.court_name);
+            localStorage.setItem('court_name', data.court_name);
+          }
+          if (data.app_title) {
+            setAppTitle(data.app_title);
+            localStorage.setItem('app_title', data.app_title);
+          }
+          if (data.app_subtitle) {
+            setAppSubtitle(data.app_subtitle);
+            localStorage.setItem('app_subtitle', data.app_subtitle);
+          }
+        } else if (!error) {
+          // If no settings exist yet for this unit, we could optionally create them here or just wait for the first edit.
+          // For now, let's just stick to defaults/localStorage.
+        }
+      };
+      fetchSettings();
+    }
+  }, [unit, session]);
+
+
+  const handleEditCourtName = async () => {
+    if (role !== 'admin') {
+      alert("Apenas administradores podem alterar o nome da Unidade.");
+      return;
+    }
     const newName = prompt("Digite o nome da Vara/Comarca:", courtName);
     if (newName && newName.trim() !== '') {
       setCourtName(newName);
       localStorage.setItem('court_name', newName);
-    }
-  };
 
-  const handleEditAppDetails = () => {
-    const newTitle = prompt("Título do Sistema (Linha 1):", appTitle);
-    if (newTitle !== null) {
-      setAppTitle(newTitle || 'Controle Unidade');
-      localStorage.setItem('app_title', newTitle || 'Controle Unidade');
-
-      const newSubtitle = prompt("Subtítulo (Linha 2):", appSubtitle);
-      if (newSubtitle !== null) {
-        setAppSubtitle(newSubtitle || 'Vara Única');
-        localStorage.setItem('app_subtitle', newSubtitle || 'Vara Única');
+      if (unit) {
+        await supabase.from('unit_settings').upsert({
+          unit,
+          court_name: newName,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'unit' });
       }
     }
   };
 
-  const { role, loading: loadingRole } = useUserRole(session);
+  const handleEditAppDetails = async () => {
+    if (role !== 'admin') {
+      alert("Apenas administradores podem alterar os títulos do sistema.");
+      return;
+    }
+
+    const newTitle = prompt("Título do Sistema (Linha 1):", appTitle);
+    if (newTitle !== null) {
+      const titleToSave = newTitle || 'Controle Unidade';
+      setAppTitle(titleToSave);
+      localStorage.setItem('app_title', titleToSave);
+
+      const newSubtitle = prompt("Subtítulo (Linha 2):", appSubtitle);
+      if (newSubtitle !== null) {
+        const subtitleToSave = newSubtitle || 'Vara Única';
+        setAppSubtitle(subtitleToSave);
+        localStorage.setItem('app_subtitle', subtitleToSave);
+
+        if (unit) {
+          await supabase.from('unit_settings').upsert({
+            unit,
+            app_title: titleToSave,
+            app_subtitle: subtitleToSave,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'unit' });
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     // "Original Settings" logic: If the user is independent (no entry in user_roles), 
