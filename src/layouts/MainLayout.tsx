@@ -148,7 +148,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                     </div>
 
                     <div className="flex items-center">
-                        <NotificationCenter session={session} />
+                        <NotificationCenter session={session} onNavigate={onModuleChange} />
                         <div className="text-xs md:text-sm font-medium text-gray-500 hidden sm:block">
                             {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </div>
