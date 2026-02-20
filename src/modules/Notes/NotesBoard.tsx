@@ -16,6 +16,13 @@ interface Note {
     author?: string;
     is_pinned?: boolean;
     deleted_at?: string | null;
+    assigned_to?: string | null;
+}
+
+interface TeamMember {
+    user_id: string;
+    email: string;
+    role: string;
 }
 
 interface NotesBoardProps {
@@ -100,6 +107,14 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
     const [exportOptions, setExportOptions] = useState({ pinned: true, others: true });
 
     const [isTrashOpen, setIsTrashOpen] = useState(false);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+    const fetchTeamMembers = async () => {
+        const { data, error } = await supabase.rpc('get_my_team');
+        if (!error && data) {
+            setTeamMembers(data);
+        }
+    };
 
     const handleEditTitle = () => {
         const newTitle = prompt("Novo Título:", boardTitle);
@@ -119,6 +134,7 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
 
     useEffect(() => {
         fetchNotes();
+        fetchTeamMembers();
         const handleClickOutside = () => setActiveColorPicker(null);
         document.addEventListener('click', handleClickOutside);
         return () => document.removeEventListener('click', handleClickOutside);
@@ -144,7 +160,8 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
             content: '',
             color: COLORS[0],
             author: '',
-            is_pinned: false
+            is_pinned: false,
+            assigned_to: ''
         });
     };
 
@@ -172,13 +189,27 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
         if (!editingNote || !session) return;
 
         if (editingNote.id) {
+            // Check if assigned_to changed to a new user
+            const originalNote = notes.find(n => n.id === editingNote.id);
+            if (editingNote.assigned_to && originalNote?.assigned_to !== editingNote.assigned_to) {
+                // Create Notification
+                await supabase.from('notifications').insert({
+                    user_id: editingNote.assigned_to,
+                    title: 'Nova Nota Atribuída',
+                    message: `Você foi marcado na nota "${editingNote.title}" no Mural de Avisos.`,
+                    link: '/avisos',
+                    read: false
+                });
+            }
+
             // Update existing
             await updateNote(editingNote.id, {
                 title: editingNote.title,
                 content: editingNote.content,
                 author: editingNote.author,
                 color: editingNote.color,
-                is_pinned: editingNote.is_pinned
+                is_pinned: editingNote.is_pinned,
+                assigned_to: editingNote.assigned_to
             });
         } else {
             // Create new
@@ -188,11 +219,23 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
                 color: editingNote.color || COLORS[0],
                 user_id: teamOwnerId || session.user.id,
                 author: editingNote.author,
-                is_pinned: editingNote.is_pinned || false
+                is_pinned: editingNote.is_pinned || false,
+                assigned_to: editingNote.assigned_to
             };
 
             const { data, error } = await supabase.from('sticky_notes').insert([newNote]).select();
             if (data) {
+                // Create Notification if assigned
+                if (newNote.assigned_to) {
+                    await supabase.from('notifications').insert({
+                        user_id: newNote.assigned_to,
+                        title: 'Nova Nota Atribuída',
+                        message: `Você foi marcado na nota "${newNote.title}" no Mural de Avisos.`,
+                        link: '/avisos',
+                        read: false
+                    });
+                }
+
                 setNotes(prev => {
                     const newList = [data[0], ...prev];
                     return newList.sort((a, b) => {
@@ -377,7 +420,14 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
                         </div>
 
                         <div className="mt-2 text-right opacity-50 flex justify-between items-end">
-                            <div>{note.is_pinned && <Pin size={12} className="text-stone-500 inline mr-1" fill="currentColor" />}</div>
+                            <div className="flex flex-col items-start gap-1">
+                                {note.is_pinned && <Pin size={12} className="text-stone-500 inline mr-1" fill="currentColor" />}
+                                {note.assigned_to && (
+                                    <div className="bg-black/10 px-2 py-0.5 rounded text-[10px] font-bold text-stone-800">
+                                        Para: {teamMembers.find(m => m.user_id === note.assigned_to)?.email.split('@')[0] || 'Unknown'}
+                                    </div>
+                                )}
+                            </div>
                             <div>
                                 <div className="bg-white/40 px-2 py-1 rounded-md backdrop-blur-sm">
                                     <div className="text-[10px] text-black font-bold font-mono">
@@ -475,17 +525,32 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Opções</label>
-                                    <label className="flex items-center gap-2 cursor-pointer p-2 border rounded hover:bg-gray-50">
-                                        <input
-                                            type="checkbox"
-                                            checked={editingNote.is_pinned || false}
-                                            onChange={e => setEditingNote({ ...editingNote, is_pinned: e.target.checked })}
-                                            className="w-4 h-4 text-stone-800 rounded focus:ring-stone-500"
-                                        />
-                                        <span className="flex items-center gap-1 text-sm"><Pin size={14} /> Fixar Nota</span>
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Atribuir a</label>
+                                    <select
+                                        className="w-full border rounded-lg p-2 outline-none focus:ring-2 ring-stone-400 bg-white"
+                                        value={editingNote.assigned_to || ''}
+                                        onChange={e => setEditingNote({ ...editingNote, assigned_to: e.target.value || null })}
+                                    >
+                                        <option value="">Ninguém</option>
+                                        {teamMembers.map(member => (
+                                            <option key={member.user_id} value={member.user_id}>
+                                                {member.email.split('@')[0]}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <label className="flex items-center gap-2 cursor-pointer p-2 border rounded hover:bg-gray-50 flex-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={editingNote.is_pinned || false}
+                                        onChange={e => setEditingNote({ ...editingNote, is_pinned: e.target.checked })}
+                                        className="w-4 h-4 text-stone-800 rounded focus:ring-stone-500"
+                                    />
+                                    <span className="flex items-center gap-1 text-sm"><Pin size={14} /> Fixar Nota</span>
+                                </label>
                             </div>
 
                             <div>
