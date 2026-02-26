@@ -29,28 +29,41 @@ export const SeiRequestForm: React.FC<SeiRequestFormProps> = ({ onClose, onSucce
         setLoading(true);
 
         try {
-            const payload = {
-                process_number: formData.processNumber,
-                subject: formData.subject,
-                creation_date: formData.creationDate,
-                last_movement_date: formData.lastMovementDate,
-                current_sector: formData.currentSector,
-                responsible_server: formData.responsibleServer,
-                status: formData.status,
-                user_id: teamOwnerId || session.user.id,
-                unit_id: unitId
-            };
-
             if (initialData) {
+                // Ao atualizar, editamos apenas os campos necessários.
+                // Evitamos sobrescrever unit_id/user_id para prevenir erros de RLS.
+                const updatePayload = {
+                    process_number: formData.processNumber,
+                    subject: formData.subject,
+                    creation_date: formData.creationDate,
+                    last_movement_date: formData.lastMovementDate,
+                    current_sector: formData.currentSector,
+                    responsible_server: formData.responsibleServer,
+                    status: formData.status
+                };
+
                 const { error } = await supabase
                     .from('sei_requests')
-                    .update(payload)
+                    .update(updatePayload)
                     .eq('id', initialData.id);
                 if (error) throw error;
             } else {
+                // Ao inserir, definimos o unit_id e o user_id
+                const insertPayload = {
+                    process_number: formData.processNumber,
+                    subject: formData.subject,
+                    creation_date: formData.creationDate,
+                    last_movement_date: formData.lastMovementDate,
+                    current_sector: formData.currentSector,
+                    responsible_server: formData.responsibleServer,
+                    status: formData.status,
+                    user_id: teamOwnerId || session.user.id,
+                    unit_id: unitId
+                };
+
                 const { error } = await supabase
                     .from('sei_requests')
-                    .insert([payload]);
+                    .insert([insertPayload]);
                 if (error) throw error;
             }
 

@@ -59,7 +59,8 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
             issuer: d.issuer,
             documentType: d.document_type || 'Documento',
             filePath: d.file_path,
-            user_id: d.user_id
+            user_id: d.user_id,
+            unit_id: d.unit_id
         })));
 
         // Fetch SEI
@@ -80,7 +81,8 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
             currentSector: d.current_sector,
             responsibleServer: d.responsible_server,
             status: d.status,
-            user_id: d.user_id
+            user_id: d.user_id,
+            unit_id: d.unit_id
         })));
 
         setLoading(false);
