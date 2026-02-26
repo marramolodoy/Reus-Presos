@@ -79,7 +79,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                 arrestDate: d.arrest_date, lastReviewDate: d.last_review_date,
                 movementType: d.movement_type, lastMovementDate: d.last_movement_date,
                 deadline: d.deadline, obs: d.obs, rji: d.rji, bnmp: d.bnmp, infopen: d.infopen,
-                prison: d.prison, user_id: d.user_id,
+                prison: d.prison, user_id: d.user_id, unit_id: d.unit_id,
                 hasHearing: d.has_hearing, hearingDate: d.hearing_date, linkedDefendantIds: d.linked_defendant_ids
             })));
         }
@@ -92,22 +92,25 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
 
     const handleSave = async (data: DefendantFormData) => {
         if (!session || !session.user) return;
-        const payload = {
+        const commonData = {
             name: data.name, case_number: data.caseNumber, penal_type: data.penalType,
             prison_type: data.prisonType,
             arrest_date: data.arrestDate, last_review_date: data.lastReviewDate,
             movement_type: data.movementType, last_movement_date: data.lastMovementDate,
             deadline: data.deadline, obs: data.obs, rji: data.rji, bnmp: data.bnmp,
-            infopen: data.infopen, prison: data.prison, user_id: teamOwnerId || session.user.id,
-            has_hearing: data.hasHearing, hearing_date: data.hearingDate || null, linked_defendant_ids: data.linkedDefendantIds,
-            unit_id: unitId
+            infopen: data.infopen, prison: data.prison,
+            has_hearing: data.hasHearing, hearing_date: data.hearingDate || null, linked_defendant_ids: data.linkedDefendantIds
         };
 
         if (editingId) {
-            const { error } = await supabase.from('defendants').update(payload).eq('id', editingId);
+            const { error } = await supabase.from('defendants').update(commonData).eq('id', editingId);
             if (error) { alert('Erro ao atualizar: ' + error.message); return; }
         } else {
-            const { error } = await supabase.from('defendants').insert([payload]);
+            const { error } = await supabase.from('defendants').insert([{
+                ...commonData,
+                user_id: teamOwnerId || session.user.id,
+                unit_id: unitId
+            }]);
             if (error) { alert('Erro ao criar: ' + error.message); return; }
         }
         await fetchDefendants();

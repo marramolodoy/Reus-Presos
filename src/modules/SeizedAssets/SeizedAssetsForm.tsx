@@ -30,29 +30,33 @@ export const SeizedAssetsForm: React.FC<SeizedAssetsFormProps> = ({ onClose, onS
         setLoading(true);
 
         try {
-            const dataToSave = {
-                process_number: formData.hasCourtCase ? formData.processNumber : null,
+            const commonData = {
+                process_number: formData.processNumber,
                 party_name: formData.partyName,
                 possible_owner: formData.possibleOwner,
                 description: formData.description,
                 location: formData.location,
                 destination_status: formData.destinationStatus,
-                seizure_date: formData.seizureDate || null,
-                has_court_case: formData.hasCourtCase,
-                user_id: teamOwnerId || session.user.id,
-                unit_id: unitId
+                is_concluded: formData.isConcluded,
+                concluded_at: formData.isConcluded ? (initialData?.concludedAt || new Date().toISOString()) : null,
+                seizure_date: formData.seizureDate,
+                has_court_case: formData.hasCourtCase
             };
 
             if (initialData) {
                 const { error } = await supabase
                     .from('seized_assets')
-                    .update(dataToSave)
+                    .update(commonData)
                     .eq('id', initialData.id);
                 if (error) throw error;
             } else {
                 const { error } = await supabase
                     .from('seized_assets')
-                    .insert([dataToSave]);
+                    .insert([{
+                        ...commonData,
+                        user_id: teamOwnerId || session.user.id,
+                        unit_id: unitId
+                    }]);
                 if (error) throw error;
             }
 

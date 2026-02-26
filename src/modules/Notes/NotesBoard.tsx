@@ -182,7 +182,9 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
             }
             return (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
         }));
-        await supabase.from('sticky_notes').update(updates).eq('id', id);
+        // Ensure unit_id and user_id are NOT in updates during a generic update
+        const { unit_id, user_id, ...safeUpdates } = updates as any;
+        await supabase.from('sticky_notes').update(safeUpdates).eq('id', id);
     };
 
     const handleSaveEdit = async () => {
@@ -202,29 +204,33 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
                 });
             }
 
-            // Update existing
-            await updateNote(editingNote.id, {
+            // Update existing - only common fields
+            const updatePayload = {
                 title: editingNote.title,
                 content: editingNote.content,
                 author: editingNote.author,
                 color: editingNote.color,
                 is_pinned: editingNote.is_pinned,
                 assigned_to: editingNote.assigned_to || null
-            });
+            };
+
+            await updateNote(editingNote.id, updatePayload);
         } else {
             // Create new
-            const newNote = {
+            const commonData = {
                 title: editingNote.title || 'Sem título',
                 content: editingNote.content || '',
                 color: editingNote.color || COLORS[0],
-                user_id: teamOwnerId || session.user.id,
                 author: editingNote.author,
                 is_pinned: editingNote.is_pinned || false,
-                assigned_to: editingNote.assigned_to || null,
-                unit_id: unitId
+                assigned_to: editingNote.assigned_to || null
             };
 
-            const { data, error } = await supabase.from('sticky_notes').insert([newNote]).select();
+            const { data, error } = await supabase.from('sticky_notes').insert([{
+                ...commonData,
+                user_id: teamOwnerId || session.user.id,
+                unit_id: unitId
+            }]).select();
             if (data) {
                 // Create Notification if assigned
                 if (newNote.assigned_to) {

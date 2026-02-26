@@ -58,7 +58,8 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
                 createdAt: d.created_at,
                 deletedAt: d.deleted_at,
                 isConcluded: d.is_concluded,
-                concludedAt: d.concluded_at
+                concludedAt: d.concluded_at,
+                unit_id: d.unit_id
             })));
         }
         setLoading(false);
@@ -69,27 +70,31 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
     }, [session, teamOwnerId]);
 
     const handleSave = async (data: PenhoraOrderFormData) => {
-        const payload = {
+        const commonData = {
             name: data.name,
             case_number: data.caseNumber,
             type: data.type,
             value: data.value,
-            last_update_date: data.lastUpdateDate || null,
+            last_update_date: data.lastUpdateDate,
             status: data.status,
             is_teimosinha: data.isTeimosinha,
-            protocol_date: data.protocolDate || null,
-            deadline_date: data.deadlineDate || null,
+            protocol_date: data.protocolDate,
+            deadline_date: data.deadlineDate,
             restriction_type: data.restrictionType,
             obs: data.obs,
-            user_id: teamOwnerId || session.user.id,
-            unit_id: unitId
+            is_concluded: data.isConcluded,
+            concluded_at: data.isConcluded ? (data.concludedAt || new Date().toISOString()) : null
         };
 
         if (editingId) {
-            const { error } = await supabase.from('penhora_orders').update(payload).eq('id', editingId);
+            const { error } = await supabase.from('penhora_orders').update(commonData).eq('id', editingId);
             if (error) alert('Erro ao atualizar: ' + error.message);
         } else {
-            const { error } = await supabase.from('penhora_orders').insert([payload]);
+            const { error } = await supabase.from('penhora_orders').insert([{
+                ...commonData,
+                user_id: teamOwnerId || session.user.id,
+                unit_id: unitId
+            }]);
             if (error) alert('Erro ao criar: ' + error.message);
         }
         await fetchOrders();

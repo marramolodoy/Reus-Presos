@@ -76,19 +76,21 @@ export const ProductivityDashboard: React.FC<ProductivityDashboardProps> = ({ se
 
     const handleSave = async (data: ProductivityLogFormData) => {
         if (!session) return;
-        const payload = {
+        const commonData = {
             date: data.date,
             process_numbers: data.processNumbers,
-            activities: data.activities,
-            user_id: session.user.id,
-            unit_id: unitId
+            activities: data.activities
         };
 
         if (editingId) {
-            const { error } = await supabase.from('productivity_logs').update(payload).eq('id', editingId);
+            const { error } = await supabase.from('productivity_logs').update(commonData).eq('id', editingId);
             if (error) alert('Erro ao atualizar: ' + error.message);
         } else {
-            const { error } = await supabase.from('productivity_logs').insert([payload]);
+            const { error } = await supabase.from('productivity_logs').insert([{
+                ...commonData,
+                user_id: session.user.id,
+                unit_id: unitId
+            }]);
             if (error) alert('Erro ao criar: ' + error.message);
         }
         await fetchLogs();
