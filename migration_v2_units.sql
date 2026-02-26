@@ -50,7 +50,7 @@ DECLARE
     tables text[] := ARRAY[
         'civil_cases', 'rogatory_letters', 'defendants', 'lawyer_requests',
         'penhora_orders', 'seized_assets', 'administrative_documents',
-        'sei_requests', 'critical_issues', 'pending_schedules'
+        'sei_requests', 'critical_issues', 'pending_schedules', 'sticky_notes'
     ];
 BEGIN
     FOREACH t IN ARRAY tables LOOP
@@ -96,7 +96,7 @@ DECLARE
     tables text[] := ARRAY[
         'civil_cases', 'rogatory_letters', 'defendants', 'lawyer_requests',
         'penhora_orders', 'seized_assets', 'administrative_documents',
-        'sei_requests', 'critical_issues', 'pending_schedules', 'unit_settings'
+        'sei_requests', 'critical_issues', 'pending_schedules', 'unit_settings', 'sticky_notes'
     ];
 BEGIN
     FOREACH t IN ARRAY tables LOOP
@@ -154,7 +154,7 @@ DECLARE
     tables text[] := ARRAY[
         'civil_cases', 'rogatory_letters', 'defendants', 'lawyer_requests',
         'penhora_orders', 'seized_assets', 'administrative_documents',
-        'sei_requests', 'critical_issues', 'pending_schedules'
+        'sei_requests', 'critical_issues', 'pending_schedules', 'sticky_notes'
     ];
 BEGIN
     FOREACH t IN ARRAY tables LOOP

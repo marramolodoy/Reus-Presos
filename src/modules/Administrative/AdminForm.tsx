@@ -13,7 +13,7 @@ interface AdminFormProps {
 }
 
 export const AdminForm: React.FC<AdminFormProps> = ({ onClose, onSuccess, session, initialData }) => {
-    const { teamOwnerId } = useUserRole(session);
+    const { teamOwnerId, unitId } = useUserRole(session);
     const [availableOptions, setAvailableOptions] = useState<{ next: string, gaps: string[] }>({ next: '...', gaps: [] });
     const [selectedNumberMode, setSelectedNumberMode] = useState<'next' | 'gap'>('next');
     const [loading, setLoading] = useState(false);
@@ -169,7 +169,8 @@ export const AdminForm: React.FC<AdminFormProps> = ({ onClose, onSuccess, sessio
                         issuer: formData.issuer,
                         document_type: formData.documentType,
                         file_path: filePath,
-                        user_id: teamOwnerId || session.user.id
+                        user_id: teamOwnerId || session.user.id,
+                        unit_id: unitId
                     }]);
 
                 if (dbError) throw dbError;

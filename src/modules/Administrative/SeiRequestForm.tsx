@@ -12,7 +12,7 @@ interface SeiRequestFormProps {
 }
 
 export const SeiRequestForm: React.FC<SeiRequestFormProps> = ({ onClose, onSuccess, session, initialData }) => {
-    const { teamOwnerId } = useUserRole(session);
+    const { teamOwnerId, unitId } = useUserRole(session);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         processNumber: initialData?.processNumber || '',
@@ -37,7 +37,8 @@ export const SeiRequestForm: React.FC<SeiRequestFormProps> = ({ onClose, onSucce
                 current_sector: formData.currentSector,
                 responsible_server: formData.responsibleServer,
                 status: formData.status,
-                user_id: teamOwnerId || session.user.id
+                user_id: teamOwnerId || session.user.id,
+                unit_id: unitId
             };
 
             if (initialData) {

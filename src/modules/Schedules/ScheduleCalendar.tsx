@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Gavel, Stethoscope, Clock, CheckCircle, Calendar, LayoutGrid, List, Plus, Tag, X, Trash2, Lock, AlertCircle, Baby, User, Edit2 } from 'lucide-react';
 import { PendingSchedule } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { useUserRole } from '../../hooks/useUserRole';
 
 interface ScheduleCalendarProps {
     schedules: PendingSchedule[];
@@ -20,6 +20,7 @@ interface DayTag {
 }
 
 export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({ schedules, onItemClick, currentTab, session }) => {
+    const { unitId } = useUserRole(session);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState<ViewMode>('month');
 
@@ -82,6 +83,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({ schedules, o
                 date: dateStr,
                 label: newTagLabel,
                 user_id: session.user.id,
+                unit_id: unitId,
                 color: 'blue'
             };
             const { error } = await supabase.from('calendar_day_tags').insert([payload]);

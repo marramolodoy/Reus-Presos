@@ -94,7 +94,7 @@ const getRGB = (colorStr: string): [number, number, number] => {
 };
 
 export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
-    const { teamOwnerId } = useUserRole(session);
+    const { teamOwnerId, unitId } = useUserRole(session);
     const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
@@ -161,7 +161,7 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
             color: COLORS[0],
             author: '',
             is_pinned: false,
-            assigned_to: ''
+            assigned_to: null
         });
     };
 
@@ -209,7 +209,7 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
                 author: editingNote.author,
                 color: editingNote.color,
                 is_pinned: editingNote.is_pinned,
-                assigned_to: editingNote.assigned_to
+                assigned_to: editingNote.assigned_to || null
             });
         } else {
             // Create new
@@ -220,7 +220,8 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
                 user_id: teamOwnerId || session.user.id,
                 author: editingNote.author,
                 is_pinned: editingNote.is_pinned || false,
-                assigned_to: editingNote.assigned_to
+                assigned_to: editingNote.assigned_to || null,
+                unit_id: unitId
             };
 
             const { data, error } = await supabase.from('sticky_notes').insert([newNote]).select();

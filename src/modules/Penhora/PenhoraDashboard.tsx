@@ -15,7 +15,7 @@ interface PenhoraDashboardProps {
 const TABS = ['Sisbajud', 'Renajud', 'Infojud', 'Siel', 'Serasajud', 'CNIB', 'SNIPER'] as const;
 
 export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) => {
-    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const { checkPermission, teamOwnerId, isAdmin, unitId } = useUserRole(session);
     const hasEdit = checkPermission('penhora', 'edit');
     const hasAdmin = checkPermission('penhora', 'admin');
 
@@ -81,7 +81,8 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
             deadline_date: data.deadlineDate || null,
             restriction_type: data.restrictionType,
             obs: data.obs,
-            user_id: teamOwnerId || session.user.id
+            user_id: teamOwnerId || session.user.id,
+            unit_id: unitId
         };
 
         if (editingId) {

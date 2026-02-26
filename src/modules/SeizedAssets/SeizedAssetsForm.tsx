@@ -12,7 +12,7 @@ interface SeizedAssetsFormProps {
 }
 
 export const SeizedAssetsForm: React.FC<SeizedAssetsFormProps> = ({ onClose, onSuccess, session, initialData }) => {
-    const { teamOwnerId } = useUserRole(session);
+    const { teamOwnerId, unitId } = useUserRole(session);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         processNumber: initialData?.processNumber || '',
@@ -39,7 +39,8 @@ export const SeizedAssetsForm: React.FC<SeizedAssetsFormProps> = ({ onClose, onS
                 destination_status: formData.destinationStatus,
                 seizure_date: formData.seizureDate || null,
                 has_court_case: formData.hasCourtCase,
-                user_id: teamOwnerId || session.user.id
+                user_id: teamOwnerId || session.user.id,
+                unit_id: unitId
             };
 
             if (initialData) {

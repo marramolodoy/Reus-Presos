@@ -17,7 +17,7 @@ interface SchedulesDashboardProps {
 }
 
 export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session }) => {
-    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const { checkPermission, teamOwnerId, isAdmin, unitId } = useUserRole(session);
     const hasEdit = checkPermission('schedules', 'edit');
     const hasAdmin = checkPermission('schedules', 'admin');
     const [schedules, setSchedules] = useState<PendingSchedule[]>([]);
@@ -94,6 +94,7 @@ export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session 
             completion_status: data.completionStatus || 'pending',
             tags: data.tags || [],
             user_id: teamOwnerId || session.user.id,
+            unit_id: unitId
         };
 
         if (editingId) {

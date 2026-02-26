@@ -101,6 +101,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ session,
             else if (link.includes('criminal')) onNavigate('criminal');
             else if (link.includes('civil')) onNavigate('civil');
             else if (link.includes('admin')) onNavigate('admin');
+            else if (link.includes('produtividade') || link.includes('productivity')) onNavigate('productivity');
             else if (link.includes('team') || link.includes('equipe')) onNavigate('team');
             // Add more mappings as needed
         }

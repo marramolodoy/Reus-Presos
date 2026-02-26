@@ -34,7 +34,7 @@ interface CriminalDashboardProps {
 }
 
 export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, courtName }) => {
-    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const { checkPermission, teamOwnerId, isAdmin, unitId } = useUserRole(session);
     const hasEdit = checkPermission('criminal', 'edit');
     const hasAdmin = checkPermission('criminal', 'admin');
     const [defendants, setDefendants] = useState<Defendant[]>([]);
@@ -99,7 +99,8 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
             movement_type: data.movementType, last_movement_date: data.lastMovementDate,
             deadline: data.deadline, obs: data.obs, rji: data.rji, bnmp: data.bnmp,
             infopen: data.infopen, prison: data.prison, user_id: teamOwnerId || session.user.id,
-            has_hearing: data.hasHearing, hearing_date: data.hearingDate || null, linked_defendant_ids: data.linkedDefendantIds
+            has_hearing: data.hasHearing, hearing_date: data.hearingDate || null, linked_defendant_ids: data.linkedDefendantIds,
+            unit_id: unitId
         };
 
         if (editingId) {
