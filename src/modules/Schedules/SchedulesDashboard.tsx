@@ -67,6 +67,7 @@ export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session 
                 status: d.status,
                 tags: d.tags,
                 user_id: d.user_id,
+                unit_id: d.unit_id,
                 deletedAt: d.deleted_at
             })));
         }
@@ -79,34 +80,69 @@ export const SchedulesDashboard: React.FC<SchedulesDashboardProps> = ({ session 
 
     const handleSave = async (data: PendingScheduleFormData) => {
         if (!session) return;
-        const payload = {
-            process_number: data.processNumber,
-            last_movement_date: data.lastMovementDate || null,
-            scheduled_date: data.scheduledDate || null,
-            scheduling_status: data.schedulingStatus || 'scheduled',
-            subject: data.subject,
-            obs: data.obs,
-            type: data.type,
-            hearing_type: data.hearingType || null,
-            competence: data.competence,
-            expertise_type: data.expertiseType || null,
-            status: 'pending',
-            completion_status: data.completionStatus || 'pending',
-            tags: data.tags || [],
-            user_id: teamOwnerId || session.user.id,
-            unit_id: unitId
-        };
+        setLoading(true);
 
-        if (editingId) {
-            const { error } = await supabase.from('pending_schedules').update(payload).eq('id', editingId);
-            if (error) alert('Erro ao atualizar: ' + error.message);
-        } else {
-            const { error } = await supabase.from('pending_schedules').insert([payload]);
-            if (error) alert('Erro ao criar: ' + error.message);
+        try {
+            if (editingId) {
+                // Ao atualizar, editamos apenas os campos necessários.
+                // Evitamos sobrescrever unit_id/user_id para prevenir erros de RLS.
+                const updatePayload = {
+                    process_number: data.processNumber,
+                    last_movement_date: data.lastMovementDate || null,
+                    scheduled_date: data.scheduledDate || null,
+                    scheduling_status: data.schedulingStatus || 'scheduled',
+                    subject: data.subject,
+                    obs: data.obs,
+                    type: data.type,
+                    hearing_type: data.hearingType || null,
+                    competence: data.competence,
+                    expertise_type: data.expertiseType || null,
+                    completion_status: data.completionStatus || 'pending',
+                    tags: data.tags || []
+                };
+
+                const { error } = await supabase
+                    .from('pending_schedules')
+                    .update(updatePayload)
+                    .eq('id', editingId);
+
+                if (error) throw error;
+            } else {
+                // Ao inserir, definimos o unit_id e o user_id
+                const insertPayload = {
+                    process_number: data.processNumber,
+                    last_movement_date: data.lastMovementDate || null,
+                    scheduled_date: data.scheduledDate || null,
+                    scheduling_status: data.schedulingStatus || 'scheduled',
+                    subject: data.subject,
+                    obs: data.obs,
+                    type: data.type,
+                    hearing_type: data.hearingType || null,
+                    competence: data.competence,
+                    expertise_type: data.expertiseType || null,
+                    status: 'pending',
+                    completion_status: data.completionStatus || 'pending',
+                    tags: data.tags || [],
+                    user_id: teamOwnerId || session.user.id,
+                    unit_id: unitId
+                };
+
+                const { error } = await supabase
+                    .from('pending_schedules')
+                    .insert([insertPayload]);
+
+                if (error) throw error;
+            }
+
+            await fetchSchedules();
+            setIsFormOpen(false);
+            setEditingId(null);
+        } catch (error: any) {
+            console.error('Erro ao salvar:', error);
+            alert('Erro ao salvar: ' + (error.message || 'Erro desconhecido'));
+        } finally {
+            setLoading(false);
         }
-        await fetchSchedules();
-        setIsFormOpen(false);
-        setEditingId(null);
     };
 
     const handleToggleStatus = async (item: PendingSchedule) => {
