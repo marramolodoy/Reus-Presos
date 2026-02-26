@@ -59,10 +59,12 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
                 requestDate: d.request_date,
                 isConcluded: d.is_concluded,
                 concludedAt: d.concluded_at,
-                destination: d.destination,
                 obs: d.obs,
                 user_id: d.user_id,
-                deletedAt: d.deleted_at
+                unit_id: d.unit_id,
+                createdAt: d.created_at,
+                deletedAt: d.deleted_at,
+                destination: d.destination
             })));
         }
         setLoading(false);
@@ -77,7 +79,7 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
         if (!session) return;
 
         // Map frontend camelCase to DB snake_case
-        const payload = {
+        const commonData = {
             name: data.name,
             case_number: data.caseNumber,
             contact_method: data.contactMethod,
@@ -86,16 +88,18 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
             is_concluded: data.isConcluded,
             concluded_at: data.isConcluded && !data.concludedAt ? new Date().toISOString() : (data.isConcluded ? data.concludedAt : null),
             destination: data.destination,
-            obs: data.obs,
-            user_id: teamOwnerId || session.user.id,
-            unit_id: unitId
+            obs: data.obs
         };
 
         if (editingId) {
-            const { error } = await supabase.from('lawyer_requests').update(payload).eq('id', editingId);
+            const { error } = await supabase.from('lawyer_requests').update(commonData).eq('id', editingId);
             if (error) alert('Erro ao atualizar: ' + error.message);
         } else {
-            const { error } = await supabase.from('lawyer_requests').insert([payload]);
+            const { error } = await supabase.from('lawyer_requests').insert([{
+                ...commonData,
+                user_id: teamOwnerId || session.user.id,
+                unit_id: unitId
+            }]);
             if (error) alert('Erro ao criar: ' + error.message);
         }
         await fetchRequests();

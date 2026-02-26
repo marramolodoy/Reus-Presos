@@ -59,6 +59,8 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
                 responsibleServer: d.responsible_server,
                 status: d.status,
                 user_id: d.user_id,
+                unit_id: d.unit_id,
+                created_at: d.created_at,
                 deletedAt: d.deleted_at
             })));
         }
@@ -71,22 +73,24 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
 
     const handleSave = async (data: CriticalIssueFormData) => {
         if (!session) return;
-        const payload = {
+        const commonData = {
             process_number: data.processNumber,
             defendant_name: data.defendantName,
             last_movement_date: data.lastMovementDate,
             reason: data.reason,
             responsible_server: data.responsibleServer,
-            status: 'pending', // Default status
-            user_id: teamOwnerId || session.user.id,
-            unit_id: unitId
+            status: data.status
         };
 
         if (editingId) {
-            const { error } = await supabase.from('critical_issues').update(payload).eq('id', editingId);
+            const { error } = await supabase.from('critical_issues').update(commonData).eq('id', editingId);
             if (error) alert('Erro ao atualizar: ' + error.message);
         } else {
-            const { error } = await supabase.from('critical_issues').insert([payload]);
+            const { error } = await supabase.from('critical_issues').insert([{
+                ...commonData,
+                user_id: teamOwnerId || session.user.id,
+                unit_id: unitId
+            }]);
             if (error) alert('Erro ao criar: ' + error.message);
         }
         await fetchIssues();

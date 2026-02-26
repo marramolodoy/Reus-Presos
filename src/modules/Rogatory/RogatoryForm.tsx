@@ -47,7 +47,7 @@ export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, 
         setLoading(true);
 
         try {
-            const payload = {
+            const commonData = {
                 case_number: formData.caseNumber,
                 direction: formData.direction,
                 defendant_name: formData.defendantName,
@@ -60,21 +60,23 @@ export const RogatoryForm: React.FC<RogatoryFormProps> = ({ onClose, onSuccess, 
                 purpose: formData.purpose,
                 has_hearing: formData.hasHearing,
                 hearing_date: formData.hasHearing && formData.hearingDate ? new Date(formData.hearingDate).toISOString() : null,
-                is_prisoner: formData.type === 'criminal' ? formData.isPrisoner : false,
-                user_id: teamOwnerId || session.user.id,
-                unit_id: unitId
+                is_prisoner: formData.type === 'criminal' ? formData.isPrisoner : false
             };
 
             if (initialData) {
                 const { error } = await supabase
                     .from('rogatory_letters')
-                    .update(payload)
+                    .update(commonData)
                     .eq('id', initialData.id);
                 if (error) throw error;
             } else {
                 const { error } = await supabase
                     .from('rogatory_letters')
-                    .insert([payload]);
+                    .insert([{
+                        ...commonData,
+                        user_id: teamOwnerId || session.user.id,
+                        unit_id: unitId
+                    }]);
                 if (error) throw error;
             }
 

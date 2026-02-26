@@ -70,7 +70,8 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
                 deletedAt: d.deleted_at,
                 signatureServer: d.signature_server,
                 signatureMagistrate: d.signature_magistrate,
-                subaccountId: d.subaccount_id
+                subaccountId: d.subaccount_id,
+                unit_id: d.unit_id
             })));
         }
         setLoading(false);
@@ -82,7 +83,7 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
 
     const handleSave = async (data: CivilCaseFormData) => {
         if (!session) return;
-        const payload = {
+        const commonData = {
             name: data.name,
             case_number: data.caseNumber,
             category: data.category,
@@ -94,20 +95,22 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
             is_delegated: data.isDelegated,
             expedition_status: data.expeditionStatus,
             is_concluded: data.isConcluded,
-            concluded_at: data.concludedAt,
+            concluded_at: data.isConcluded ? (data.concludedAt || new Date().toISOString()) : null,
             responsible_server: data.responsibleServer,
             signature_server: data.signatureServer,
             signature_magistrate: data.signatureMagistrate,
-            subaccount_id: data.subaccountId,
-            user_id: teamOwnerId || session.user.id,
-            unit_id: unitId
+            subaccount_id: data.subaccountId
         };
 
         if (editingId) {
-            const { error } = await supabase.from('civil_cases').update(payload).eq('id', editingId);
+            const { error } = await supabase.from('civil_cases').update(commonData).eq('id', editingId);
             if (error) alert('Erro ao atualizar: ' + error.message);
         } else {
-            const { error } = await supabase.from('civil_cases').insert([payload]);
+            const { error } = await supabase.from('civil_cases').insert([{
+                ...commonData,
+                user_id: teamOwnerId || session.user.id,
+                unit_id: unitId
+            }]);
             if (error) alert('Erro ao criar: ' + error.message);
         }
         await fetchCases();

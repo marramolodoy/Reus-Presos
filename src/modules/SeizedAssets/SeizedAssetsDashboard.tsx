@@ -46,7 +46,8 @@ export const SeizedAssetsDashboard: React.FC<{ session: any }> = ({ session }) =
                 concludedAt: d.concluded_at,
                 seizureDate: d.seizure_date,
                 hasCourtCase: d.has_court_case,
-                user_id: d.user_id
+                user_id: d.user_id,
+                unit_id: d.unit_id
             })));
         }
         setLoading(false);
