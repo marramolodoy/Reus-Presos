@@ -43,7 +43,8 @@ export function useUserRole(session: any) {
                         rogatory: 'admin',
                         critical_issues: 'admin',
                         penhora: 'admin',
-                        schedules: 'admin'
+                        schedules: 'admin',
+                        productivity: 'admin'
                     });
                     setTeamOwnerId(session.user.id);
                     setUnit(null);

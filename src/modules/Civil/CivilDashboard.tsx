@@ -20,7 +20,7 @@ interface CivilDashboardProps {
 const CATEGORIES = CIVIL_CATEGORIES;
 
 export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
-    const { checkPermission, teamOwnerId } = useUserRole(session);
+    const { checkPermission, teamOwnerId, unitId } = useUserRole(session);
     const hasEdit = checkPermission('civil', 'edit');
     const hasAdmin = checkPermission('civil', 'admin');
 
@@ -99,7 +99,8 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
             signature_server: data.signatureServer,
             signature_magistrate: data.signatureMagistrate,
             subaccount_id: data.subaccountId,
-            user_id: teamOwnerId || session.user.id
+            user_id: teamOwnerId || session.user.id,
+            unit_id: unitId
         };
 
         if (editingId) {

@@ -16,7 +16,7 @@ interface LawyerDashboardProps {
 }
 
 export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => {
-    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const { checkPermission, teamOwnerId, isAdmin, unitId } = useUserRole(session);
     const hasEdit = checkPermission('lawyer_requests', 'edit');
     const hasAdmin = checkPermission('lawyer_requests', 'admin');
     const [requests, setRequests] = useState<LawyerRequest[]>([]);
@@ -87,7 +87,8 @@ export const LawyerDashboard: React.FC<LawyerDashboardProps> = ({ session }) => 
             concluded_at: data.isConcluded && !data.concludedAt ? new Date().toISOString() : (data.isConcluded ? data.concludedAt : null),
             destination: data.destination,
             obs: data.obs,
-            user_id: teamOwnerId || session.user.id
+            user_id: teamOwnerId || session.user.id,
+            unit_id: unitId
         };
 
         if (editingId) {

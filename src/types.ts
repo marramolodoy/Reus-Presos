@@ -221,3 +221,16 @@ export interface SeizedAsset {
 }
 
 export type SeizedAssetFormData = Omit<SeizedAsset, 'id' | 'user_id' | 'deletedAt'>;
+
+export interface ProductivityLog {
+  id: string;
+  date: string;
+  processNumbers: string;
+  activities: string;
+  user_id: string;
+  unit_id?: string;
+  created_at: string;
+  deleted_at?: string | null;
+}
+
+export type ProductivityLogFormData = Omit<ProductivityLog, 'id' | 'user_id' | 'created_at' | 'deleted_at'>;

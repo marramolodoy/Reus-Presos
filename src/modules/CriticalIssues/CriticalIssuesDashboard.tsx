@@ -17,7 +17,7 @@ interface CriticalIssuesDashboardProps {
 }
 
 export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = ({ session }) => {
-    const { checkPermission, teamOwnerId, isAdmin } = useUserRole(session);
+    const { checkPermission, teamOwnerId, isAdmin, unitId } = useUserRole(session);
     const hasEdit = checkPermission('critical_issues', 'edit');
     const hasAdmin = checkPermission('critical_issues', 'admin');
     const [issues, setIssues] = useState<CriticalIssue[]>([]);
@@ -78,7 +78,8 @@ export const CriticalIssuesDashboard: React.FC<CriticalIssuesDashboardProps> = (
             reason: data.reason,
             responsible_server: data.responsibleServer,
             status: 'pending', // Default status
-            user_id: teamOwnerId || session.user.id
+            user_id: teamOwnerId || session.user.id,
+            unit_id: unitId
         };
 
         if (editingId) {

@@ -14,6 +14,7 @@ import { SchedulesDashboard } from './modules/Schedules/SchedulesDashboard';
 import { TeamDashboard } from './modules/Team/TeamDashboard';
 import { PenhoraDashboard } from './modules/Penhora/PenhoraDashboard';
 import { SeizedAssetsDashboard } from './modules/SeizedAssets/SeizedAssetsDashboard';
+import { ProductivityDashboard } from './modules/Productivity/ProductivityDashboard';
 
 import { APP_MODULES } from './constants';
 import { useUserRole } from './hooks/useUserRole';
@@ -175,6 +176,8 @@ export default function App() {
         return <PenhoraDashboard session={session} />;
       case 'seized_assets':
         return <SeizedAssetsDashboard session={session} />;
+      case 'productivity':
+        return <ProductivityDashboard session={session} />;
       default:
         return <CriminalDashboard session={session} courtName={courtName} />;
     }
