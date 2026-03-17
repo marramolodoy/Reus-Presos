@@ -233,11 +233,11 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
             }]).select();
             if (data) {
                 // Create Notification if assigned
-                if (newNote.assigned_to) {
+                if (data[0].assigned_to) {
                     await supabase.from('notifications').insert({
-                        user_id: newNote.assigned_to,
+                        user_id: data[0].assigned_to,
                         title: 'Nova Nota Atribuída',
-                        message: `Você foi marcado na nota "${newNote.title}" no Mural de Avisos.`,
+                        message: `Você foi marcado na nota "${data[0].title}" no Mural de Avisos.`,
                         link: '/avisos',
                         read: false
                     });
