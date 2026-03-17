@@ -15,6 +15,7 @@ import { TeamDashboard } from './modules/Team/TeamDashboard';
 import { PenhoraDashboard } from './modules/Penhora/PenhoraDashboard';
 import { SeizedAssetsDashboard } from './modules/SeizedAssets/SeizedAssetsDashboard';
 import { ProductivityDashboard } from './modules/Productivity/ProductivityDashboard';
+import { FormatterDashboard } from './modules/Formatter/FormatterDashboard';
 
 import { APP_MODULES } from './constants';
 import { useUserRole } from './hooks/useUserRole';
@@ -178,6 +179,8 @@ export default function App() {
         return <SeizedAssetsDashboard session={session} />;
       case 'productivity':
         return <ProductivityDashboard session={session} />;
+      case 'formatter':
+        return <FormatterDashboard session={session} />;
       default:
         return <CriminalDashboard session={session} courtName={courtName} />;
     }
