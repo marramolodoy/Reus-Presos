@@ -1,4 +1,4 @@
-import { Scale, StickyNote, Gavel, FileText, UserCog, AlertTriangle, CalendarRange, Users, ShieldAlert, TrendingUp } from 'lucide-react';
+import { Scale, StickyNote, Gavel, FileText, UserCog, AlertTriangle, CalendarRange, Users, ShieldAlert, TrendingUp, Type } from 'lucide-react';
 
 export const CIVIL_CATEGORIES = [
     'Urgentes',
@@ -23,5 +23,6 @@ export const APP_MODULES = [
     { id: 'penhora', label: 'Penhora / Restrições', icon: ShieldAlert, permissionKey: 'penhora' },
     { id: 'schedules', label: 'Audiências & Perícias', icon: CalendarRange, permissionKey: 'schedules' },
     { id: 'productivity', label: 'Produtividade', icon: TrendingUp, permissionKey: 'productivity' },
+    { id: 'formatter', label: 'Formatador', icon: Type, permissionKey: 'administrative' },
     { id: 'team', label: 'Minha Equipe', icon: Users, permissionKey: 'team', adminOnly: true },
 ] as const;
