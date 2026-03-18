@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import jsPDF from 'jspdf';
-import { Type, Download, AlignJustify, Quote, RefreshCw, Copy, Check, Heading, FileText } from 'lucide-react';
+import { Type, Download, AlignJustify, Quote, RefreshCw, Copy, Check, Heading, FileText, Eraser } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, convertInchesToTwip } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -70,13 +70,28 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
     const editorRef = useRef<HTMLDivElement>(null);
     const [blocks, setBlocks] = useState<Block[]>([]);
     const [copied, setCopied] = useState(false);
+    const [autoClean, setAutoClean] = useState(true);
+
+    const handleClear = () => {
+        if (editorRef.current) {
+            editorRef.current.innerHTML = '';
+        }
+        setBlocks([]);
+        setCopied(false);
+    };
 
     const handleProcessText = () => {
         if (!editorRef.current) return;
 
         const processNode = (node: Node): string => {
             if (node.nodeType === Node.TEXT_NODE) {
-                return node.textContent || '';
+                let text = node.textContent || '';
+
+                if (autoClean) {
+                    text = text.replace(/\s*\[\s*\d{7}-\d{2}[^\]]*\|\s*[a-zA-Z]+\s*\]/g, '');
+                }
+
+                return text;
             } else if (node.nodeType === Node.ELEMENT_NODE) {
                 const el = node as HTMLElement;
                 const tag = el.tagName.toLowerCase();
@@ -383,6 +398,24 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                         <h3 className="font-bold flex items-center gap-2 text-gray-700">
                             <Type size={16} /> Texto Original
                         </h3>
+                        <div className="flex gap-4 text-xs font-medium text-gray-600">
+                            <label className="flex items-center gap-1 cursor-pointer hover:text-justice-600">
+                                <input
+                                    type="checkbox"
+                                    checked={autoClean}
+                                    onChange={(e) => { setAutoClean(e.target.checked); setTimeout(handleProcessText, 0); }}
+                                    className="rounded border-gray-300 text-justice-600 focus:ring-justice-500"
+                                />
+                                Ocultar Rastros PJe
+                            </label>
+                            <button
+                                onClick={handleClear}
+                                className="flex items-center gap-1 text-red-600 hover:text-red-700 font-bold bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors"
+                            >
+                                <Eraser size={14} />
+                                Limpar
+                            </button>
+                        </div>
                     </div>
                     <div
                         ref={editorRef}
