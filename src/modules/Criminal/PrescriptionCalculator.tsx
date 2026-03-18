@@ -69,7 +69,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
     
     const [data, setData] = useState({
         // Bloco 1
-        nome: '', dataNascimento: '',
+        nome: '', dataNascimento: '', caseNumber: '',
         // Bloco 2
         infracao: '',
         penaMaxAnos: 0, penaMaxMeses: 0,
@@ -143,7 +143,13 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         let dataPrescricao = '';
 
         for (let i = 0; i < marcos.length - 1; i++) {
-            const paramLimit = (marcos[i+1].date <= (data.dataSentenca || '9999-12-31') && prazoConcreto) ? prazoConcreto : prazoAbstrato;
+            let paramLimit = (marcos[i+1].date <= (data.dataSentenca || '9999-12-31') && prazoConcreto) ? prazoConcreto : prazoAbstrato;
+            
+            // Reincidência increase +1/3 (Art. 110 CP) - Only applies AFTER transito (PPE phase)
+            // If the start of this interval is after transito (dataInicioPena), apply increase
+            if (data.dataReincidencia && marcos[i].date >= (data.dataInicioPena || '9999-12-31')) {
+                paramLimit = paramLimit * 1.3333; // +1/3
+            }
             
             // Note: Lei 12.234/2010 forbids retroactivity before Denuncia. We should notice it, but for simplicity, we use the rule requested implicitly.
             const diff = diffFormat(marcos[i].date, marcos[i+1].date);
@@ -192,7 +198,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         try {
             const { error } = await supabase.from('suspended_cases').insert([{
                 name: data.nome,
-                case_number: '', 
+                case_number: data.caseNumber, 
                 penal_type: data.infracao,
                 suspension_date: data.dataSuspensao,
                 prescription_date: report.dataConsumacao366,
@@ -296,14 +302,18 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                 {/* Bloco 1 */}
                 <section className="mb-6">
                     <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2"><User size={16}/> Bloco 1: Acusado</h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Nome Compledo</label>
-                            <input type="text" value={data.nome} onChange={e => handleChange('nome', e.target.value)} className="w-full border rounded p-2 text-sm focus:ring-1 focus:ring-justice-500 outline-none" />
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Nome Completo</label>
+                            <input type="text" value={data.nome} onChange={e => handleChange('nome', e.target.value)} className="w-full border rounded p-2 text-sm outline-none" placeholder="Ex: João da Silva" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Número do Processo</label>
+                            <input type="text" value={data.caseNumber} onChange={e => handleChange('caseNumber', e.target.value)} className="w-full border rounded p-2 text-sm outline-none" placeholder="Ex: 0000000-00.0000.8.14.0000" />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Data de Nascimento</label>
-                            <input type="date" value={data.dataNascimento} onChange={e => handleChange('dataNascimento', e.target.value)} className="w-full border rounded p-2 text-sm focus:ring-1 focus:ring-justice-500 outline-none" />
+                            <input type="date" value={data.dataNascimento} onChange={e => handleChange('dataNascimento', e.target.value)} className="w-full border rounded p-2 text-sm outline-none" />
                         </div>
                     </div>
                 </section>
@@ -410,54 +420,68 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
 
             {/* REPORT COLUMN */}
             <div className="w-full md:w-1/2 flex flex-col">
-                <div className="bg-justice-900 text-white p-4 rounded-t-xl flex justify-between items-center sm:flex-row flex-col gap-2">
+                <div className="bg-justice-900 text-white p-4 rounded-t-xl flex justify-between items-center sm:flex-row flex-col gap-3">
                     <h2 className="font-bold font-serif flex items-center gap-2"><FileText size={18}/> Relatório Analítico</h2>
                     <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="text-white border-white hover:bg-white hover:text-justice-900 h-8 flex items-center gap-1" disabled={!report}>
-                            <Download size={14}/> Baixar PDF
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleCopy} className="text-white border-white hover:bg-white hover:text-justice-900 h-8 flex items-center gap-1">
-                            {copied ? <Check size={14}/> : <Copy size={14}/>} {copied ? 'Copiado!' : 'Copiar Texto'}
-                        </Button>
+                        <button 
+                            onClick={handleDownloadPDF} 
+                            disabled={!report}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded border border-white/40 text-white bg-white/10 hover:bg-white hover:text-justice-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Download size={15}/> Baixar PDF
+                        </button>
+                        <button 
+                            onClick={handleCopy} 
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded border border-white/40 text-white bg-white/10 hover:bg-white hover:text-justice-900 transition-colors"
+                        >
+                            {copied ? <Check size={15}/> : <Copy size={15}/>} {copied ? 'Copiado!' : 'Copiar Texto'}
+                        </button>
                     </div>
                 </div>
                 
                 <div 
-                    id="report-output" 
-                    className="bg-white border-x border-b border-gray-200 rounded-b-xl p-8 flex-1 overflow-y-auto text-sm leading-relaxed" 
-                    style={{ fontFamily: '"Century Gothic", CenturyGothic, sans-serif', fontSize: '11pt', maxHeight: 'calc(100vh - 160px)' }}
+                    id="report-output"
+                    className="p-8 bg-white border-x border-b border-gray-200 shadow-inner flex-1 overflow-auto text-sm leading-relaxed"
+                    style={{ fontFamily: '"Times New Roman", Times, serif', minHeight: '600px' }}
                 >
                     {!report ? (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
-                            <Calculator size={48} className="mb-4" />
-                            <p>Preencha os dados à esquerda (Infração e Pena Máxima)</p>
-                            <p>para gerar a análise prescricional automaticamente.</p>
+                        <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60 py-20">
+                            <Calculator size={48} className="mb-4 text-justice-200" />
+                            <p className="font-medium text-justice-900">Aguardando dados...</p>
+                            <p className="text-xs">Preencha a Infração e Pena Máxima (Bloco 2)</p>
                         </div>
                     ) : (
-                        <div className="space-y-6 text-gray-800 isolate">
-                            
-                            <div className="text-center mb-8 border-b-2 border-gray-900 pb-2">
-                                <h1 className="font-bold uppercase text-lg">CALCULADORA PRESCRICIONAL CRIMINAL</h1>
-                                <p className="text-xs uppercase text-gray-500">Relatório de Análise em Abstrato / Concreto</p>
+                        <div className="space-y-8 text-black">
+                            {/* Header Centered */}
+                            <div className="text-center mb-10 border-b-2 border-black pb-2">
+                                <h1 className="text-xl font-bold uppercase underline">Calculadora Prescricional Criminal</h1>
+                                <p className="text-xs font-semibold mt-1">RELATÓRIO DE ANÁLISE EM ABSTRATO / CONCRETO</p>
                             </div>
 
-                            <div>
-                                <p className="font-bold uppercase mb-2">I. Síntese dos Dados Processuais Relevantes</p>
-                                <ul className="list-disc pl-5">
-                                    <li><strong>Acusado:</strong> {data.nome || 'Não informado'}</li>
-                                    <li><strong>Infração Penal:</strong> {data.infracao}</li>
-                                    <li><strong>Data do Fato:</strong> {formatDateBr(data.dataFato)}</li>
-                                    <li><strong>Nascimento:</strong> {formatDateBr(data.dataNascimento)}</li>
-                                </ul>
-                            </div>
+                            {/* Section I */}
+                            <section>
+                                <h3 className="font-bold border-b border-gray-100 mb-3 uppercase tracking-wider text-xs bg-gray-50 p-1.5 text-center">I. Síntese dos Dados Processuais Relevantes</h3>
+                                <div className="ml-4 space-y-1">
+                                    <p><strong>• Acusado:</strong> {data.nome || 'Não informado'}</p>
+                                    <p><strong>• Processo:</strong> {data.caseNumber || '---'}</p>
+                                    <p><strong>• Infração Penal:</strong> {data.infracao || '---'}</p>
+                                    <p><strong>• Data do Fato:</strong> {formatDateBr(data.dataFato)}</p>
+                                    <p><strong>• Nascimento:</strong> {formatDateBr(data.dataNascimento)}</p>
+                                </div>
+                            </section>
 
-                            <div>
-                                <p className="font-bold uppercase mb-2">II. Prescrição em Abstrato</p>
-                                <p>Com base na pena máxima em abstrato informada ({data.penaMaxAnos} anos e {data.penaMaxMeses} meses), o prazo prescricional aplicável, nos termos do art. 109 do CP, é de <strong>{report.prazoAbstrato} anos</strong>.</p>
-                                {report.redutorAplica && (
-                                    <p className="text-red-700 bg-red-50 p-2 border-l-2 border-red-500 mt-2 text-xs">Atenção: O acusado é {report.redutorMotivo}. Aplicou-se a redução do prazo pela metade (Art. 115, CP).</p>
-                                )}
-                            </div>
+                            {/* Section II */}
+                            <section>
+                                <h3 className="font-bold border-b border-gray-100 mb-3 uppercase tracking-wider text-xs bg-gray-50 p-1.5 text-center">II. Prescrição em Abstrato</h3>
+                                <div className="ml-4">
+                                    <p>Com base na pena máxima em abstrato informada ({data.penaMaxAnos} anos e {data.penaMaxMeses} meses), o prazo prescricional aplicável, nos termos do art. 109 do CP, é de <strong>{report.prazoAbstrato} anos</strong>.</p>
+                                    {report.redutorAplica && (
+                                        <div className="bg-red-50 border-l-4 border-red-500 p-3 mt-3 text-red-900 italic text-xs">
+                                            <strong>NOTA ART. 115 CP:</strong> O acusado é {report.redutorMotivo}. Portanto, o prazo prescricional foi reduzido pela metade.
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
 
                             {(data.penaAplAnos > 0 || data.penaAplMeses > 0) && (
                                 <div>
