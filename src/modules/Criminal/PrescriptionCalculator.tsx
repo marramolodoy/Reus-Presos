@@ -249,27 +249,27 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                 if (y > 280) { doc.addPage(); y = 20; }
             };
 
-            addLine("I. SINTESE DOS DADOS PROCESSUAIS RELEVANTES", true);
-            addLine(`Acusado: ${data.nome || 'Nao informado'}`);
-            addLine(`Infracao Penal: ${data.infracao}`);
+            addLine("I. SÍNTESE DOS DADOS PROCESSUAIS RELEVANTES", true);
+            addLine(`Acusado: ${data.nome || 'Não informado'}`);
+            addLine(`Infração Penal: ${data.infracao}`);
             addLine(`Data do Fato: ${formatDateBr(data.dataFato)}`);
             addLine(`Nascimento: ${formatDateBr(data.dataNascimento)}`);
             y += 5;
 
-            addLine("II. PRESCRICAO EM ABSTRATO", true);
-            addLine(`Com base na pena maxima informada (${data.penaMaxAnos}a ${data.penaMaxMeses}m), o prazo abstrato e de ${report.prazoAbstrato} anos.`);
+            addLine("II. PRESCRIÇÃO EM ABSTRATO", true);
+            addLine(`Com base na pena máxima informada (${pMaxA}a ${pMaxM}m), o prazo abstrato é de ${report.prazoAbstrato} anos.`);
             if (report.redutorAplica) {
-                addLine(`(Atencao: Aplicou-se a reducao do prazo pela metade - Art. 115, CP. Acusado era ${report.redutorMotivo})`);
+                addLine(`(Atenção: Aplicou-se a redução do prazo pela metade - Art. 115, CP. Acusado era ${report.redutorMotivo})`);
             }
             y += 5;
 
-            if (data.penaAplAnos > 0 || data.penaAplMeses > 0) {
-                addLine("III. PRESCRICAO EM CONCRETO (SENTENCA)", true);
+            if (pAplA > 0 || pAplM > 0) {
+                addLine("III. PRESCRIÇÃO EM CONCRETO (SENTENÇA)", true);
                 addLine(`Prazo concretizado a partir da pena aplicada: ${report.prazoConcreto} anos.`);
                 y += 5;
             }
 
-            addLine("IV. ANALISE CRONOLOGICA DOS MARCOS INTERRUPTIVOS", true);
+            addLine("IV. ANÁLISE CRONOLÓGICA DOS MARCOS INTERRUPTIVOS", true);
             if (report.analiseIntervalos.length > 0) {
                 const head = [["De", "Ate", "Lapso Calculado", "Limite", "Status"]];
                 const body = report.analiseIntervalos.map((i: any) => [
@@ -286,16 +286,16 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                 y += 5;
             }
 
-            addLine("V. SITUACAO ATUAL E DATAS CRITICAS", true);
+            addLine("V. SITUAÇÃO ATUAL E DATAS CRÍTICAS", true);
             addLine(`Status global: ${report.prescrito ? 'Consumada em intervalo anterior' : (data.dataSuspensao ? 'Suspensa (Art. 366)' : 'Em curso regular')}`);
-            if (data.dataSuspensao) addLine(report.suspensaoText.replace(/ç|ã/g, 'c').replace(/õ/g, 'o'));
-            if (report.projecaoPrescricaoTotal) addLine(report.projecaoPrescricaoTotal.replace(/ç|ã/g, 'c').replace(/õ/g, 'o'));
+            if (data.dataSuspensao) addLine(report.suspensaoText);
+            if (report.projecaoPrescricaoTotal) addLine(report.projecaoPrescricaoTotal);
             y += 5;
 
             if (data.citadoEdital && data.dataSuspensao) {
-                addLine("VI. PROVIDENCIAS NA SUSPENSAO (ART. 366 CPP)", true);
-                if (data.novoEndereco) addLine(`Expeça-se mandado de citacao para novo endereco do MP: ${data.novoEndereco}.`);
-                else addLine(`Deverao ser feitas consultas anuais de endereco.`);
+                addLine("VI. PROVIDÊNCIAS NA SUSPENSÃO (ART. 366 CPP)", true);
+                if (data.novoEndereco) addLine(`Expeça-se mandado de citação para novo endereço do MP: ${data.novoEndereco}.`);
+                else addLine(`Deverão ser feitas consultas anuais de endereço.`);
             }
 
             doc.save(`Calculo_Prescricional_${data.nome ? data.nome.replace(/\s+/g, '_') : 'Relatorio'}.pdf`);
