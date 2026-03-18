@@ -26,3 +26,5 @@ export const APP_MODULES = [
     { id: 'formatter', label: 'Formatador', icon: Type, permissionKey: 'administrative' },
     { id: 'team', label: 'Minha Equipe', icon: Users, permissionKey: 'team', adminOnly: true },
 ] as const;
+
+export const APP_VERSION = '2026.03.18.1800';

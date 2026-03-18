@@ -17,7 +17,7 @@ import { SeizedAssetsDashboard } from './modules/SeizedAssets/SeizedAssetsDashbo
 import { ProductivityDashboard } from './modules/Productivity/ProductivityDashboard';
 import { FormatterDashboard } from './modules/Formatter/FormatterDashboard';
 
-import { APP_MODULES } from './constants';
+import { APP_MODULES, APP_VERSION } from './constants';
 import { useUserRole } from './hooks/useUserRole';
 
 // Types for Module Switcher
@@ -39,6 +39,18 @@ export default function App() {
 
   // Get Role AND Unit
   const { role, unit, unitId, loading: loadingRole } = useUserRole(session);
+
+  // Force Update Logic
+  useEffect(() => {
+    const localVersion = localStorage.getItem('app_version');
+    if (localVersion && localVersion !== APP_VERSION) {
+      console.log(`Nova versão detectada (${APP_VERSION}). Atualizando...`);
+      localStorage.setItem('app_version', APP_VERSION);
+      window.location.reload();
+    } else if (!localVersion) {
+      localStorage.setItem('app_version', APP_VERSION);
+    }
+  }, []);
 
   // Load Unit Settings from Supabase
   useEffect(() => {
