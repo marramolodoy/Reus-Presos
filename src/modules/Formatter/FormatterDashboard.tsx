@@ -172,17 +172,8 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
         setCopied(false);
     };
 
-    const toggleBlockType = (id: string) => {
-        setBlocks(blocks.map(b => {
-            if (b.id === id) {
-                let nextType: 'normal' | 'quote' | 'title' = 'normal';
-                if (b.type === 'normal') nextType = 'title';
-                else if (b.type === 'title') nextType = 'quote';
-                else if (b.type === 'quote') nextType = 'normal';
-                return { ...b, type: nextType };
-            }
-            return b;
-        }));
+    const setBlockType = (id: string, type: 'normal' | 'quote' | 'title') => {
+        setBlocks(blocks.map(b => (b.id === id ? { ...b, type } : b)));
         setCopied(false);
     };
 
@@ -554,29 +545,45 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                                         }}
                                     >
                                         {/* Floating Menu Action Palette */}
+                                        {/* Floating Menu Action Palette */}
                                         <div
-                                            className="absolute -left-10 top-1 flex flex-col gap-1 opacity-20 group-hover:opacity-100 transition-all z-10"
+                                            className="absolute top-0 right-2 flex flex-row items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10 bg-white border border-gray-200 shadow-md rounded-lg p-1 -mt-3"
                                         >
                                             <div
-                                                className="text-gray-500 cursor-pointer hover:text-justice-600 transition-all p-1.5 bg-gray-50 rounded-md shadow-sm border border-gray-100"
-                                                onClick={() => toggleBlockType(block.id)}
-                                                title="Alternar estilo (Título / Citação / Normal)"
+                                                className={`cursor-pointer transition-all p-1.5 rounded-md ${block.type === 'normal' ? 'bg-justice-50 text-justice-700' : 'text-gray-500 hover:bg-gray-100'}`}
+                                                onClick={() => setBlockType(block.id, 'normal')}
+                                                title="Texto Normal"
                                             >
-                                                {block.type === 'quote' && <Quote size={14} />}
-                                                {block.type === 'title' && <Heading size={14} />}
-                                                {block.type === 'normal' && <AlignJustify size={14} />}
+                                                <AlignJustify size={14} />
                                             </div>
                                             <div
-                                                className={`cursor-pointer transition-all p-1.5 rounded-md shadow-sm border ${block.isCenter ? 'bg-justice-100 border-justice-300 text-justice-700' : 'bg-gray-50 border-gray-100 text-gray-500 hover:text-justice-600'}`}
+                                                className={`cursor-pointer transition-all p-1.5 rounded-md ${block.type === 'title' ? 'bg-justice-50 text-justice-700' : 'text-gray-500 hover:bg-gray-100'}`}
+                                                onClick={() => setBlockType(block.id, 'title')}
+                                                title="Título Numérico"
+                                            >
+                                                <Heading size={14} />
+                                            </div>
+                                            <div
+                                                className={`cursor-pointer transition-all p-1.5 rounded-md ${block.type === 'quote' ? 'bg-justice-50 text-justice-700' : 'text-gray-500 hover:bg-gray-100'}`}
+                                                onClick={() => setBlockType(block.id, 'quote')}
+                                                title="Citação"
+                                            >
+                                                <Quote size={14} />
+                                            </div>
+
+                                            <div className="w-px h-4 bg-gray-200 mx-1"></div>
+
+                                            <div
+                                                className={`cursor-pointer transition-all p-1.5 rounded-md ${block.isCenter ? 'bg-justice-50 text-justice-700' : 'text-gray-500 hover:bg-gray-100'}`}
                                                 onClick={() => toggleBlockProperty(block.id, 'isCenter')}
                                                 title="Centralizar"
                                             >
                                                 <AlignCenter size={14} />
                                             </div>
                                             <div
-                                                className={`cursor-pointer transition-all p-1.5 rounded-md shadow-sm border ${block.isBold ? 'bg-justice-100 border-justice-300 text-justice-700' : 'bg-gray-50 border-gray-100 text-gray-500 hover:text-justice-600'}`}
+                                                className={`cursor-pointer transition-all p-1.5 rounded-md ${block.isBold ? 'bg-justice-50 text-justice-700' : 'text-gray-500 hover:bg-gray-100'}`}
                                                 onClick={() => toggleBlockProperty(block.id, 'isBold')}
-                                                title="Negrito Numérico"
+                                                title="Negrito"
                                             >
                                                 <Bold size={14} />
                                             </div>
