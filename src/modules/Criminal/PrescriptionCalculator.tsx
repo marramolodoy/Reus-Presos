@@ -78,7 +78,8 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         dataFato: '', dataDenuncia: '', dataPronuncia: '', dataConfirmacaoPronuncia: '',
         dataSentenca: '', dataInicioPena: '', dataReincidencia: '',
         // Bloco 4
-        citadoEdital: false, dataSuspensao: '', novoEndereco: ''
+        citadoEdital: false, dataSuspensao: '', novoEndereco: '',
+        usePerspectiva: false
     });
 
     const handleChange = (field: string, value: any) => setData(p => ({ ...p, [field]: value }));
@@ -166,7 +167,8 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
             if (prazoConcreto) {
                 const isAfterDenuncia = !!data.dataDenuncia && mStart.date >= data.dataDenuncia;
                 const isBefore2010 = !!data.dataFato && data.dataFato < '2010-05-05';
-                if (isAfterDenuncia || isBefore2010) paramLimit = prazoConcreto;
+                const isVirtual = !!data.usePerspectiva;
+                if (isAfterDenuncia || isBefore2010 || isVirtual) paramLimit = prazoConcreto;
             }
 
             if (data.dataReincidencia && mStart.date >= (data.dataInicioPena || '9999-12-31')) {
@@ -208,7 +210,21 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         let projecaoPrescricaoTotal = '';
         if (!prescrito && marcosComSuspensao.length > 0) {
             const lastMarco = marcosComSuspensao[marcosComSuspensao.length - 1];
-            const anosRestantes = ultimoParamLimit - (diffAcumuladaDias / 365.25);
+            
+            // Priority limit for projection (Virtual/Intercorrente)
+            let projectionLimit = prazoAbstrato;
+            if (prazoConcreto) {
+                const isAfterDenuncia = !!data.dataDenuncia && lastMarco.date >= data.dataDenuncia;
+                const isBefore2010 = !!data.dataFato && data.dataFato < '2010-05-05';
+                const isVirtual = !!data.usePerspectiva;
+                if (isAfterDenuncia || isBefore2010 || isVirtual) projectionLimit = prazoConcreto;
+            }
+            if (data.dataReincidencia && lastMarco.date >= (data.dataInicioPena || '9999-12-31')) {
+                projectionLimit = projectionLimit * 1.3333;
+            }
+
+            const anosAcumuladosAteAgora = diffAcumuladaDias / 365.25;
+            const anosRestantes = projectionLimit - anosAcumuladosAteAgora;
             const dataProjetada = addYearsToDate(lastMarco.date, anosRestantes);
             
             if (dataProjetada) {
@@ -218,7 +234,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                     dateDe: lastMarco.date,
                     dateAte: dataProjetada,
                     diff: { anos: Math.floor(anosRestantes), meses: Math.floor((anosRestantes % 1) * 12), dias: 0 },
-                    limite: ultimoParamLimit.toFixed(1).replace('.0', ''),
+                    limite: projectionLimit.toFixed(1).replace('.0', ''),
                     prescreveu: false,
                     alerta: anosRestantes <= 1,
                     suspenso: false,
@@ -411,6 +427,18 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                             <div className="flex gap-2">
                                 <input type="number" placeholder="Anos" value={data.penaAplAnos || ''} onChange={e => handleChange('penaAplAnos', parseInt(e.target.value))} className="w-1/2 border rounded p-1 text-sm outline-none" min="0"/>
                                 <input type="number" placeholder="Meses" value={data.penaAplMeses || ''} onChange={e => handleChange('penaAplMeses', parseInt(e.target.value))} className="w-1/2 border rounded p-1 text-sm outline-none" min="0" max="11"/>
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                                <input 
+                                    type="checkbox" 
+                                    id="usePerspectiva"
+                                    className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                    checked={data.usePerspectiva}
+                                    onChange={(e) => handleChange('usePerspectiva', e.target.checked)}
+                                />
+                                <label htmlFor="usePerspectiva" className="text-[10px] text-green-800 font-semibold leading-tight">
+                                    Prescrição Virtual (ignora vedação Art. 110 CP)
+                                </label>
                             </div>
                         </div>
                     </div>
