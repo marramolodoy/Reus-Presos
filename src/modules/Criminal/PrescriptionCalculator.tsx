@@ -14,10 +14,16 @@ const getPrazo = (anos: number, meses: number = 0, dias: number = 0) => {
     return 3;
 };
 
+const safeDate = (dStr: string) => {
+    if (!dStr) return null;
+    const d = new Date(dStr.includes('T') ? dStr : dStr + 'T12:00:00Z');
+    return isNaN(d.getTime()) ? null : d;
+};
+
 const getAge = (birthDate: string, targetDate: string) => {
-    if (!birthDate || !targetDate) return null;
-    const b = new Date(birthDate);
-    const t = new Date(targetDate);
+    const b = safeDate(birthDate);
+    const t = safeDate(targetDate);
+    if (!b || !t) return null;
     let age = t.getFullYear() - b.getFullYear();
     const m = t.getMonth() - b.getMonth();
     if (m < 0 || (m === 0 && t.getDate() < b.getDate())) {
@@ -27,10 +33,9 @@ const getAge = (birthDate: string, targetDate: string) => {
 };
 
 const diffFormat = (d1: string, d2: string) => {
-    if (!d1 || !d2) return null;
-    // ensure d1 <= d2
-    let start = new Date(d1 > d2 ? d2 : d1);
-    let end = new Date(d1 > d2 ? d1 : d2);
+    const start = safeDate(d1 > d2 ? d2 : d1);
+    const end = safeDate(d1 > d2 ? d1 : d2);
+    if (!start || !end) return null;
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diasTotal = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     const anos = Math.floor(diasTotal / 365.25);
@@ -39,11 +44,14 @@ const diffFormat = (d1: string, d2: string) => {
     return { anos, meses, dias, diasTotal, isNegative: d1 > d2 };
 };
 
-const formatDateBr = (d: string) => d ? new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR') : '---';
+const formatDateBr = (d: string) => {
+    const dt = safeDate(d);
+    return dt ? dt.toLocaleDateString('pt-BR') : '---';
+};
 
 const addYearsToDate = (d: string, years: number) => {
-    if (!d) return '';
-    const date = new Date(d + 'T12:00:00Z');
+    const date = safeDate(d);
+    if (!date) return '';
     date.setFullYear(date.getFullYear() + years);
     return date.toISOString().split('T')[0];
 };
