@@ -272,6 +272,11 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
 
     const handleDownloadPDF = () => {
         if (!report) return;
+        const pMaxA = parseFloat(data.penaMaxAnos as any || 0);
+        const pMaxM = parseFloat(data.penaMaxMeses as any || 0);
+        const pAplA = parseFloat(data.penaAplAnos as any || 0);
+        const pAplM = parseFloat(data.penaAplMeses as any || 0);
+
         try {
             const doc = new jsPDF('p', 'mm', 'a4');
             doc.setFontSize(14);
