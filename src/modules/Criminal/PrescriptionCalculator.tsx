@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, User, FileText, Activity, MapPin, Calculator, Copy, Check } from 'lucide-react';
+import { Calendar, User, FileText, Activity, MapPin, Calculator, Copy, Check, Save } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { supabase } from '../../lib/supabase';
+import { useUserRole } from '../../hooks/useUserRole';
 
 // Utilities
 const getPrazo = (anos: number, meses: number = 0, dias: number = 0) => {
@@ -56,8 +58,12 @@ const addYearsToDate = (d: string, years: number) => {
     return date.toISOString().split('T')[0];
 };
 
-export const PrescriptionCalculator: React.FC = () => {
+export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) => {
+    const { teamOwnerId, unitId, checkPermission } = useUserRole(session);
+    const hasEdit = checkPermission('criminal', 'edit');
+
     const [copied, setCopied] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     
     const [data, setData] = useState({
         // Bloco 1
@@ -169,10 +175,39 @@ export const PrescriptionCalculator: React.FC = () => {
 
         return {
             prazoAbstrato, prazoConcreto, redutorAplica, redutorMotivo,
-            analiseIntervalos, prescrito, suspensaoText, projecaoPrescricaoTotal
+            analiseIntervalos, prescrito, suspensaoText, projecaoPrescricaoTotal,
+            dataFimSuspensao: data.citadoEdital && data.dataSuspensao ? addYearsToDate(data.dataSuspensao, prazoAbstrato) : '',
+            dataConsumacao366: data.citadoEdital && data.dataSuspensao ? addYearsToDate(addYearsToDate(data.dataSuspensao, prazoAbstrato), prazoAtivo) : ''
         };
 
     }, [data]);
+
+    const handleSaveSuspended = async () => {
+        if (!hasEdit) return alert('Você não tem permissão para editar.');
+        if (!data.nome) return alert('Digite o Nome do Réu no Bloco 1.');
+        if (!data.dataSuspensao || !report?.dataConsumacao366) return alert('Preencha os dados de suspensão.');
+
+        setIsSaving(true);
+        try {
+            const { error } = await supabase.from('suspended_cases').insert([{
+                name: data.nome,
+                case_number: '', 
+                penal_type: data.infracao,
+                suspension_date: data.dataSuspensao,
+                prescription_date: report.dataConsumacao366,
+                obs: data.novoEndereco ? `Novo endereço pelo MP: ${data.novoEndereco}` : 'Gerado via Calculadora',
+                user_id: teamOwnerId || session?.user?.id,
+                unit_id: unitId
+            }]);
+            
+            if (error) throw error;
+            alert('Processo Suspenso adicionado com sucesso à Lista!');
+        } catch (error: any) {
+            alert('Erro ao salvar processo suspenso: ' + error.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
         <div className="flex flex-col md:flex-row gap-6 p-4">
@@ -287,6 +322,20 @@ export const PrescriptionCalculator: React.FC = () => {
                                 <label className="block text-xs font-medium text-gray-500 mb-1">Novo endereço fornecido pelo MP?</label>
                                 <input type="text" placeholder="Se sim, cole o endereço..." value={data.novoEndereco} onChange={e => handleChange('novoEndereco', e.target.value)} className="w-full border rounded p-2 text-sm outline-none" />
                             </div>
+                        </div>
+                    )}
+                    
+                    {data.citadoEdital && data.dataSuspensao && report?.dataConsumacao366 && (
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                            <Button 
+                                variant="primary" 
+                                className="w-full justify-center bg-red-600 hover:bg-red-700 text-white" 
+                                leftIcon={Save}
+                                disabled={isSaving}
+                                onClick={handleSaveSuspended}
+                            >
+                                {isSaving ? 'Salvando...' : 'Salvar na Lista de Suspensos'}
+                            </Button>
                         </div>
                     )}
                 </section>
