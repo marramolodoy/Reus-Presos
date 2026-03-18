@@ -71,6 +71,7 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
     const [blocks, setBlocks] = useState<Block[]>([]);
     const [copied, setCopied] = useState(false);
     const [autoClean, setAutoClean] = useState(true);
+    const [autoHighlight, setAutoHighlight] = useState(true);
 
     const handleClear = () => {
         if (editorRef.current) {
@@ -92,6 +93,17 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
 
                 if (autoClean) {
                     text = text.replace(/\s*\[\s*\d{7}-\d{2}[^\]]*\|\s*[a-zA-Z]+\s*\]/g, '');
+                }
+
+                if (autoHighlight) {
+                    // Decide verbs
+                    text = text.replace(/\b(?:JULGO PROCEDENTE|JULGO IMPROCEDENTE|JULGO PARCIALMENTE PROCEDENTE|CONDENO|HOMOLOGO|ABSOLVO|DEFIRO|INDEFIRO|REJEITO|ACOLHO|DECLARO|DETERMINO|EXTINGO)(?:\s+o\s+pedido|\s+a\s+denúncia)?\b/gi, '<strong>$&</strong>');
+                    // Currencies
+                    text = text.replace(/R\$\s*[\d\.,]+/gi, '<strong>$&</strong>');
+                    // Dates
+                    text = text.replace(/\b\d{2}\/\d{2}\/\d{4}\b/g, '<strong>$&</strong>');
+                    // Process Numbers
+                    text = text.replace(/\b\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}\b/g, '<strong>$&</strong>');
                 }
 
                 return text;
@@ -410,6 +422,15 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                                     className="rounded border-gray-300 text-justice-600 focus:ring-justice-500"
                                 />
                                 Ocultar Rastros PJe
+                            </label>
+                            <label className="flex items-center gap-1 cursor-pointer hover:text-justice-600" title="Destacar Valores, Datas e Decisões">
+                                <input
+                                    type="checkbox"
+                                    checked={autoHighlight}
+                                    onChange={(e) => { setAutoHighlight(e.target.checked); setTimeout(handleProcessText, 0); }}
+                                    className="rounded border-gray-300 text-justice-600 focus:ring-justice-500"
+                                />
+                                Auto-Negrito
                             </label>
                             <button
                                 onClick={handleClear}
