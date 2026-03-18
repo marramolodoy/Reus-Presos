@@ -141,9 +141,10 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
 
         const newBlocks: Block[] = lines.map((line, index) => {
             const cleanText = stripHtml(line).trim();
-            // Detectar automaticamente se é um título (RELATÓRIO, FUNDAMENTAÇÃO, etc ou texto curto em caixa alta)
-            const isTypicalTitle = /^(RELATÓRIO|FUNDAMENTAÇÃO|DISPOSITIVO|DECISÃO|SENTENÇA|VOTO|ACÓRDÃO)$/i.test(cleanText) || 
-                                  (cleanText.length > 3 && cleanText.length < 50 && cleanText === cleanText.toUpperCase() && !cleanText.includes('('));
+            // Detectar automaticamente se é um título estrito e sem numeração prévia
+            // Considera apenas (Relatório, Fundamentação, Dispositivo, Conclusão)
+            // A regex ^(...)$ garante que a string inteira seja apenas a palavra, excluindo casos com numeração
+            const isTypicalTitle = /^(relat[óo]rio|fundamenta[çc][ãa]o|dispositivo|conclus[ãa]o)$/i.test(cleanText);
             
             return {
                 id: `block-${index}-${Date.now()}`,
