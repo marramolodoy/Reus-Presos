@@ -215,6 +215,8 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                 analiseIntervalos.push({
                     de: lastMarco.label,
                     ate: 'Expectativa de Prescrição Final',
+                    dateDe: lastMarco.date,
+                    dateAte: dataProjetada,
                     diff: { anos: Math.floor(anosRestantes), meses: Math.floor((anosRestantes % 1) * 12), dias: 0 },
                     limite: ultimoParamLimit.toFixed(1).replace('.0', ''),
                     prescreveu: false,
@@ -308,19 +310,20 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
 
             addLine("IV. ANÁLISE CRONOLÓGICA DOS MARCOS INTERRUPTIVOS", true);
             if (report.analiseIntervalos.length > 0) {
-                const head = [["De", "Ate", "Lapso Calculado", "Limite", "Status"]];
+                const head = [["De", "Data A", "Até", "Data B", "Lapso", "Limit", "Status"]];
                 const body = report.analiseIntervalos.map((i: any) => [
-                    i.de, i.ate, 
+                    i.de, formatDateBr(i.dateDe), i.ate, formatDateBr(i.dateAte),
                     i.suspenso ? "PRAZO SUSPENSO" : (i.isExpectation ? "---" : `${i.diff.anos}a ${i.diff.meses}m ${i.diff.dias}d`), 
-                    i.suspenso ? "---" : `${i.limite} anos`, 
+                    i.suspenso ? "---" : `${i.limite}a`, 
                     i.suspenso ? "SUSPENSO" : (i.prescreveu ? "PRESCRITO" : (i.isExpectation ? "PROJECAO" : (i.alerta ? "ALERTA" : "OK")))
                 ]);
                 autoTable(doc, { 
                     head, body, startY: y, 
-                    styles: { fontSize: 8 }, 
+                    styles: { fontSize: 7 }, 
+                    columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 20 }, 2: { cellWidth: 25 }, 3: { cellWidth: 20 } },
                     headStyles: { fillColor: [40, 40, 40] },
                     didParseCell: (data) => {
-                        if (data.section === 'body' && data.column.index === 4) {
+                        if (data.section === 'body' && data.column.index === 6) {
                             const val = data.cell.text[0];
                             if (val === 'PRESCRITO') data.cell.styles.textColor = [200, 0, 0];
                             if (val === 'ALERTA') data.cell.styles.textColor = [200, 100, 0];
@@ -565,7 +568,9 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                                             <thead className="bg-gray-100">
                                                 <tr>
                                                     <th className="p-2 border-b">De (Marco A)</th>
+                                                    <th className="p-2 border-b">Data A</th>
                                                     <th className="p-2 border-b">Até (Marco B)</th>
+                                                    <th className="p-2 border-b">Data B</th>
                                                     <th className="p-2 border-b">Lapso</th>
                                                     <th className="p-2 border-b text-center">Tolerância</th>
                                                     <th className="p-2 border-b text-center">Status</th>
@@ -575,19 +580,21 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                                                 {report.analiseIntervalos.map((interval: any, idx: number) => (
                                                     <tr key={idx} className={`border-b border-black/10 last:border-b-0 ${interval.suspenso ? 'bg-blue-50/30 font-italic text-blue-900' : (interval.isExpectation ? 'bg-gray-50 italic text-gray-500' : '')}`}>
                                                         <td className="p-2">{interval.de}</td>
+                                                        <td className="p-2 font-mono text-[10px]">{formatDateBr(interval.dateDe)}</td>
                                                         <td className="p-2">{interval.ate}</td>
-                                                        <td className="p-2 text-center font-medium">
+                                                        <td className="p-2 font-mono text-[10px]">{formatDateBr(interval.dateAte)}</td>
+                                                        <td className="p-2 text-center font-medium whitespace-nowrap">
                                                             {interval.suspenso ? 'Suspenso' : (interval.isExpectation ? '---' : `${interval.diff.anos}a ${interval.diff.meses}m ${interval.diff.dias}d`)}
                                                         </td>
-                                                        <td className="p-2 text-center text-gray-600">{interval.suspenso ? '---' : `${interval.limite} anos`}</td>
-                                                        <td className={`p-2 font-bold text-center uppercase ${
+                                                        <td className="p-2 text-center text-gray-600 font-mono text-[10px]">{interval.suspenso ? '---' : `${interval.limite}a`}</td>
+                                                        <td className={`p-2 font-bold text-center uppercase text-[10px] ${
                                                             interval.suspenso ? 'text-blue-600' : 
                                                             interval.prescreveu ? 'text-red-600' : 
                                                             interval.alerta ? (interval.isExpectation ? 'text-orange-500' : 'text-orange-500 underline') : 'text-green-700'
                                                         }`}>
                                                             {interval.suspenso ? 'SUSPENSO' : 
                                                              interval.prescreveu ? 'PRESCRITO' : 
-                                                             (interval.isExpectation ? 'FINAL (PROJEÇÃO)' : (interval.alerta ? 'ALERTA' : 'OK'))}
+                                                             (interval.isExpectation ? 'PROJEÇÃO' : (interval.alerta ? 'ALERTA' : 'OK'))}
                                                         </td>
                                                     </tr>
                                                 ))}
