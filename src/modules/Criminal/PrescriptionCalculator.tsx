@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { Calendar, User, FileText, Activity, MapPin, Calculator, Copy, Check, Save } from 'lucide-react';
+import { Calendar, User, FileText, Activity, MapPin, Calculator, Copy, Check, Save, Download } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
 import { useUserRole } from '../../hooks/useUserRole';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Utilities
 const getPrazo = (anos: number, meses: number = 0, dias: number = 0) => {
@@ -209,6 +210,80 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         }
     };
 
+    const handleDownloadPDF = () => {
+        if (!report) return;
+        try {
+            const doc = new jsPDF('p', 'mm', 'a4');
+            doc.setFontSize(14);
+            doc.text("CALCULADORA PRESCRICIONAL CRIMINAL", 14, 15);
+            doc.setFontSize(10);
+            doc.text("Relatório de Análise em Abstrato / Concreto", 14, 21);
+            
+            let y = 30;
+            const addLine = (text: string, bold = false) => {
+                doc.setFont("helvetica", bold ? "bold" : "normal");
+                const lines = doc.splitTextToSize(text, 180);
+                doc.text(lines, 14, y);
+                y += lines.length * 5;
+                if (y > 280) { doc.addPage(); y = 20; }
+            };
+
+            addLine("I. SINTESE DOS DADOS PROCESSUAIS RELEVANTES", true);
+            addLine(`Acusado: ${data.nome || 'Nao informado'}`);
+            addLine(`Infracao Penal: ${data.infracao}`);
+            addLine(`Data do Fato: ${formatDateBr(data.dataFato)}`);
+            addLine(`Nascimento: ${formatDateBr(data.dataNascimento)}`);
+            y += 5;
+
+            addLine("II. PRESCRICAO EM ABSTRATO", true);
+            addLine(`Com base na pena maxima informada (${data.penaMaxAnos}a ${data.penaMaxMeses}m), o prazo abstrato e de ${report.prazoAbstrato} anos.`);
+            if (report.redutorAplica) {
+                addLine(`(Atencao: Aplicou-se a reducao do prazo pela metade - Art. 115, CP. Acusado era ${report.redutorMotivo})`);
+            }
+            y += 5;
+
+            if (data.penaAplAnos > 0 || data.penaAplMeses > 0) {
+                addLine("III. PRESCRICAO EM CONCRETO (SENTENCA)", true);
+                addLine(`Prazo concretizado a partir da pena aplicada: ${report.prazoConcreto} anos.`);
+                y += 5;
+            }
+
+            addLine("IV. ANALISE CRONOLOGICA DOS MARCOS INTERRUPTIVOS", true);
+            if (report.analiseIntervalos.length > 0) {
+                const head = [["De", "Ate", "Lapso Calculado", "Limite", "Status"]];
+                const body = report.analiseIntervalos.map((i: any) => [
+                    i.de, i.ate, `${i.diff.anos}a ${i.diff.meses}m ${i.diff.dias}d`, `${i.limite} anos`, i.prescreveu ? "PRESCRITO" : "Ok"
+                ]);
+                autoTable(doc, { 
+                    head, body, startY: y, 
+                    styles: { fontSize: 8 }, 
+                    headStyles: { fillColor: [40, 40, 40] } 
+                });
+                y = (doc as any).lastAutoTable.finalY + 10;
+            } else {
+                addLine("Nenhum intervalo viavel inserido.");
+                y += 5;
+            }
+
+            addLine("V. SITUACAO ATUAL E DATAS CRITICAS", true);
+            addLine(`Status global: ${report.prescrito ? 'Consumada em intervalo anterior' : (data.dataSuspensao ? 'Suspensa (Art. 366)' : 'Em curso regular')}`);
+            if (data.dataSuspensao) addLine(report.suspensaoText.replace(/ç|ã/g, 'c').replace(/õ/g, 'o'));
+            if (report.projecaoPrescricaoTotal) addLine(report.projecaoPrescricaoTotal.replace(/ç|ã/g, 'c').replace(/õ/g, 'o'));
+            y += 5;
+
+            if (data.citadoEdital && data.dataSuspensao) {
+                addLine("VI. PROVIDENCIAS NA SUSPENSAO (ART. 366 CPP)", true);
+                if (data.novoEndereco) addLine(`Expeça-se mandado de citacao para novo endereco do MP: ${data.novoEndereco}.`);
+                else addLine(`Deverao ser feitas consultas anuais de endereco.`);
+            }
+
+            doc.save(`Calculo_Prescricional_${data.nome ? data.nome.replace(/\s+/g, '_') : 'Relatorio'}.pdf`);
+        } catch(e) {
+            console.error(e);
+            alert("Erro ao gerar PDF.");
+        }
+    };
+
     return (
         <div className="flex flex-col md:flex-row gap-6 p-4">
             
@@ -344,11 +419,16 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
 
             {/* REPORT COLUMN */}
             <div className="w-full md:w-1/2 flex flex-col">
-                <div className="bg-justice-900 text-white p-4 rounded-t-xl flex justify-between items-center">
+                <div className="bg-justice-900 text-white p-4 rounded-t-xl flex justify-between items-center sm:flex-row flex-col gap-2">
                     <h2 className="font-bold font-serif flex items-center gap-2"><FileText size={18}/> Relatório Analítico</h2>
-                    <Button variant="outline" size="sm" onClick={handleCopy} className="text-white border-white hover:bg-white hover:text-justice-900 h-8 flex items-center gap-1">
-                        {copied ? <Check size={14}/> : <Copy size={14}/>} {copied ? 'Copiado!' : 'Copiar Texto'}
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="text-white border-white hover:bg-white hover:text-justice-900 h-8 flex items-center gap-1" disabled={!report}>
+                            <Download size={14}/> Baixar PDF
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleCopy} className="text-white border-white hover:bg-white hover:text-justice-900 h-8 flex items-center gap-1">
+                            {copied ? <Check size={14}/> : <Copy size={14}/>} {copied ? 'Copiado!' : 'Copiar Texto'}
+                        </Button>
+                    </div>
                 </div>
                 
                 <div 
