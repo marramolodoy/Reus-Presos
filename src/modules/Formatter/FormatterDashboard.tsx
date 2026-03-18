@@ -108,9 +108,11 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                 let isUnderline = ['u'].includes(tag) || el.style.textDecoration.includes('underline');
 
                 let result = inner;
-                if (isBold && result.trim()) result = `<strong>${result}</strong>`;
-                if (isItalic && result.trim()) result = `<em>${result}</em>`;
-                if (isUnderline && result.trim()) result = `<u>${result}</u>`;
+                if (result.trim()) {
+                    if (isBold) result = result.split('\n').map(line => line.trim() ? `<strong>${line}</strong>` : line).join('\n');
+                    if (isItalic) result = result.split('\n').map(line => line.trim() ? `<em>${line}</em>` : line).join('\n');
+                    if (isUnderline) result = result.split('\n').map(line => line.trim() ? `<u>${line}</u>` : line).join('\n');
+                }
 
                 const blockTags = ['p', 'div', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'tr'];
                 if (blockTags.includes(tag)) {
@@ -476,7 +478,7 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                                             marginLeft: block.type === 'quote' ? '4cm' : '0',
                                             textIndent: block.type === 'quote' ? '0' : '2cm',
                                             fontSize: block.type === 'quote' ? '11pt' : '13pt',
-                                            fontWeight: block.type === 'title' ? 'bold' : 'normal',
+                                            fontWeight: block.type === 'title' ? 'bold' : undefined,
                                             textTransform: block.type === 'title' ? 'uppercase' : 'none',
                                         }}
                                     >
