@@ -20,6 +20,7 @@ import { DashboardCharts } from '../../components/DashboardCharts';
 import { RecycleBinModal } from '../../components/RecycleBinModal';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
 import { PrescriptionCalculator } from './PrescriptionCalculator';
+import { SuspendedCasesDashboard } from './SuspendedCasesDashboard';
 import { Button } from '../../components/ui/Button';
 import { calculateDaysDiff, calculateDaysUntil, formatDate, getStatusColor, THRESHOLD_IMPRISONMENT, THRESHOLD_REVIEW } from '../../utils';
 
@@ -53,7 +54,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
     const [editingId, setEditingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'provisional_definitive' | 'civil' | 'dashboard' | 'calculator'>('preventive');
+    const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'provisional_definitive' | 'civil' | 'dashboard' | 'calculator' | 'suspended'>('preventive');
 
     // Sorting
     type SortOption = 'no_review_asc' | 'imprisonment_asc' | 'no_movement_asc' | 'name_asc';
@@ -265,11 +266,14 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                 <button onClick={() => setActiveTab('civil')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'civil' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Cíveis</button>
                 <button onClick={() => setActiveTab('dashboard')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'dashboard' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Painel Gráfico</button>
                 <button onClick={() => setActiveTab('calculator')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'calculator' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Calc. Prescricional</button>
+                <button onClick={() => setActiveTab('suspended')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'suspended' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Suspensos (Art. 366)</button>
             </div>
 
             <div className="flex-1 overflow-auto bg-gray-50">
                 {activeTab === 'calculator' ? (
-                    <PrescriptionCalculator />
+                    <PrescriptionCalculator session={session} />
+                ) : activeTab === 'suspended' ? (
+                    <SuspendedCasesDashboard session={session} />
                 ) : activeTab === 'dashboard' ? (
                     <DashboardCharts defendants={defendants} />
                 ) : (

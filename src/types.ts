@@ -234,3 +234,18 @@ export interface ProductivityLog {
 }
 
 export type ProductivityLogFormData = Omit<ProductivityLog, 'id' | 'user_id' | 'created_at' | 'deleted_at'>;
+
+export interface SuspendedCase {
+  id: string;
+  name: string;
+  case_number: string;
+  penal_type: string;
+  suspension_date: string;
+  prescription_date: string;
+  obs?: string;
+  user_id: string;
+  unit_id?: string;
+  deleted_at?: string | null;
+}
+
+export type SuspendedCaseFormData = Omit<SuspendedCase, 'id' | 'user_id' | 'deleted_at'>;
