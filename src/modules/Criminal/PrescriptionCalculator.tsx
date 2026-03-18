@@ -1,3 +1,4 @@
+import React, { useState, useMemo } from 'react';
 import { Calendar, User, FileText, Activity, MapPin, Calculator, Copy, Check, Save, Download } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
