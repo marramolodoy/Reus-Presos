@@ -87,6 +87,9 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
             if (node.nodeType === Node.TEXT_NODE) {
                 let text = node.textContent || '';
 
+                // Prevent hidden \n from Word/PDF breaking our line splits
+                text = text.replace(/[\r\n]+/g, ' ');
+
                 if (autoClean) {
                     text = text.replace(/\s*\[\s*\d{7}-\d{2}[^\]]*\|\s*[a-zA-Z]+\s*\]/g, '');
                 }
