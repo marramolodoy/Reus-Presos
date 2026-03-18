@@ -92,6 +92,14 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
 
                 if (autoClean) {
                     text = text.replace(/\s*\[\s*\d{7}-\d{2}[^\]]*\|\s*[a-zA-Z]+\s*\]/g, '');
+                    
+                    // Padronizar referências a Id e Pág
+                    // Formato: (Id. XXX - Pág. XX)
+                    // Remove parênteses se precedido por preposições comuns (de, do, da, no, na, etc.)
+                    text = text.replace(/((\b(?:de|do|da|dos|das|no|na|nos|nas|ao|à|aos|às|pelo|pela|pelos|pelas)\s+)?)(?:\()?Id\.?\s*(\d+)(?:\s*[-–,]\s*P[aá]g\.?\s*(\d+))?(?:\)?)/gi, (match, fullPrep, prep, id, pag) => {
+                        const formattedId = pag ? `Id. ${id} - Pág. ${pag}` : `Id. ${id}`;
+                        return prep ? `${fullPrep}${formattedId}` : `(${formattedId})`;
+                    });
                 }
 
                 return text;
@@ -102,8 +110,10 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                 let inner = '';
                 el.childNodes.forEach(c => inner += processNode(c));
 
-                // Inline styles from Word (like <b>, <i> or inline CSS)
-                let isBold = ['b', 'strong'].includes(tag) || el.style.fontWeight === 'bold' || parseInt(el.style.fontWeight) >= 700;
+                // Inline styles from Word (like <b>, <strong> or inline CSS)
+                let isBold = ['b', 'strong', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'th'].includes(tag) || 
+                             el.style.fontWeight === 'bold' || 
+                             parseInt(el.style.fontWeight || '400') >= 700;
                 let isItalic = ['i', 'em'].includes(tag) || el.style.fontStyle === 'italic';
                 let isUnderline = ['u'].includes(tag) || el.style.textDecoration.includes('underline');
 
@@ -129,11 +139,18 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
         const rawHtml = processNode(editorRef.current).replace(/\n\n+/g, '\n').trim();
         const lines = rawHtml.split('\n').filter(line => line.trim() !== '');
 
-        const newBlocks: Block[] = lines.map((line, index) => ({
-            id: `block-${index}-${Date.now()}`,
-            text: line.trim(),
-            type: 'normal'
-        }));
+        const newBlocks: Block[] = lines.map((line, index) => {
+            const cleanText = stripHtml(line).trim();
+            // Detectar automaticamente se é um título (RELATÓRIO, FUNDAMENTAÇÃO, etc ou texto curto em caixa alta)
+            const isTypicalTitle = /^(RELATÓRIO|FUNDAMENTAÇÃO|DISPOSITIVO|DECISÃO|SENTENÇA|VOTO|ACÓRDÃO)$/i.test(cleanText) || 
+                                  (cleanText.length > 3 && cleanText.length < 50 && cleanText === cleanText.toUpperCase() && !cleanText.includes('('));
+            
+            return {
+                id: `block-${index}-${Date.now()}`,
+                text: line.trim(),
+                type: isTypicalTitle ? 'title' : 'normal'
+            };
+        });
 
         setBlocks(newBlocks);
         setCopied(false);
