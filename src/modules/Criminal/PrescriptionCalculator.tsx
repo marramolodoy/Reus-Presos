@@ -270,10 +270,11 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         }
 
         return {
+            prazoBrutoAbstrato, prazoBrutoConcreto,
             prazoAbstrato, prazoConcreto, redutorAplica, redutorMotivo,
             analiseIntervalos, prescrito, suspensaoText, projecaoPrescricaoTotal,
             dataFimSuspensao: data.citadoEdital && data.dataSuspensao ? addYearsToDate(data.dataSuspensao, prazoAbstrato) : '',
-            dataConsumacao366: data.citadoEdital && data.dataSuspensao ? addYearsToDate(addYearsToDate(data.dataSuspensao, prazoAbstrato), prazoAtivo) : ''
+            dataConsumacao366: data.citadoEdital && data.dataSuspensao ? addYearsToDate(addYearsToDate(data.dataSuspensao, prazoAbstrato), prazoAbstrato) : ''
         };
 
     }, [data]);
@@ -594,7 +595,11 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                             <section>
                                 <h3 className="font-bold border-b border-gray-100 mb-3 uppercase tracking-wider text-xs bg-gray-50 p-1.5 text-center">II. Prescrição em Abstrato</h3>
                                 <div className="ml-4">
-                                    <p>Com base na pena máxima em abstrato informada ({data.penaMaxAnos} anos e {data.penaMaxMeses} meses), o prazo prescricional aplicável, nos termos do art. 109 do CP, é de <strong>{report.prazoAbstrato} anos</strong>.</p>
+                                    <p>Pena Máxima: {data.penaMaxAnos} anos e {data.penaMaxMeses} meses.</p>
+                                    <p>• Prazo (Art. 109 CP): <strong>{report.prazoBrutoAbstrato} anos</strong>.</p>
+                                    {report.redutorAplica && (
+                                        <p>• Prazo Reduzido (Art. 115 CP - Metade): <strong>{report.prazoAbstrato} anos</strong>.</p>
+                                    )}
                                     {report.redutorAplica && (
                                         <div className="bg-red-50 border-l-4 border-red-500 p-3 mt-3 text-red-900 italic text-xs">
                                             <strong>NOTA ART. 115 CP:</strong> O acusado é {report.redutorMotivo}. Portanto, o prazo prescricional foi reduzido pela metade.
@@ -604,10 +609,17 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                             </section>
 
                             {(data.penaAplAnos > 0 || data.penaAplMeses > 0) && (
-                                <div>
-                                    <p className="font-bold uppercase mb-2">III. Prescrição em Concreto (Sentença)</p>
-                                    <p>Considerando a pena concretamente aplicada ({data.penaAplAnos} anos e {data.penaAplMeses} meses), o prazo prescricional regulador passa a ser de <strong>{report.prazoConcreto} anos</strong>, aplicável inclusive retroativamente aos marcos anteriores à sentença (respeitado o art. 110, §1º do CP para fatos posteriores a 2010).</p>
-                                </div>
+                                <section>
+                                    <h3 className="font-bold border-b border-gray-100 mb-3 uppercase tracking-wider text-xs bg-gray-50 p-1.5 text-center">III. Prescrição em Concreto</h3>
+                                    <div className="ml-4">
+                                        <p>Pena Aplicada: {data.penaAplAnos} anos e {data.penaAplMeses} meses.</p>
+                                        <p>• Prazo (Art. 109 CP): <strong>{report.prazoBrutoConcreto} anos</strong>.</p>
+                                        {report.redutorAplica && (
+                                            <p>• Prazo Reduzido (Art. 115 CP - Metade): <strong>{report.prazoConcreto} anos</strong>.</p>
+                                        )}
+                                        <p className="mt-2 text-xs text-gray-600 italic">Este prazo regula a prescrição intercorrente e retroativa (nos termos do Art. 110, §1º do CP).</p>
+                                    </div>
+                                </section>
                             )}
 
                             <div>
