@@ -109,8 +109,11 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         const pAplA = parseFloat(data.penaAplAnos as any || 0);
         const pAplM = parseFloat(data.penaAplMeses as any || 0);
 
-        let prazoAbstrato = getPrazo(pMaxA, pMaxM);
-        let prazoConcreto = (pAplA > 0 || pAplM > 0) ? getPrazo(pAplA, pAplM) : null;
+        let prazoBrutoAbstrato = getPrazo(pMaxA, pMaxM);
+        let prazoBrutoConcreto = (pAplA > 0 || pAplM > 0) ? getPrazo(pAplA, pAplM) : 0;
+        
+        let prazoAbstrato = prazoBrutoAbstrato;
+        let prazoConcreto = prazoBrutoConcreto > 0 ? prazoBrutoConcreto : null;
         
         let prazoAtivo = prazoConcreto || prazoAbstrato;
 
