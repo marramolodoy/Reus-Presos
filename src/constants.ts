@@ -27,4 +27,4 @@ export const APP_MODULES = [
     { id: 'team', label: 'Minha Equipe', icon: Users, permissionKey: 'team', adminOnly: true },
 ] as const;
 
-export const APP_VERSION = '2026.03.18.1800';
+export const APP_VERSION = '2026.03.18.1820';
