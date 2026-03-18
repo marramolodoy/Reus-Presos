@@ -208,6 +208,8 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
 
         // Add Future Expectation Row if not prescribed
         let projecaoPrescricaoTotal = '';
+        const todayStr = new Date().toISOString().split('T')[0];
+
         if (!prescrito && marcosComSuspensao.length > 0) {
             const lastMarco = marcosComSuspensao[marcosComSuspensao.length - 1];
             
@@ -228,6 +230,9 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
             const dataProjetada = addYearsToDate(lastMarco.date, anosRestantes);
             
             if (dataProjetada) {
+                const hasPrescritoByProjecao = dataProjetada <= todayStr;
+                if (hasPrescritoByProjecao) prescrito = true;
+
                 analiseIntervalos.push({
                     de: lastMarco.label,
                     ate: 'Expectativa de Prescrição Final',
@@ -235,12 +240,17 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                     dateAte: dataProjetada,
                     diff: { anos: Math.floor(anosRestantes), meses: Math.floor((anosRestantes % 1) * 12), dias: 0 },
                     limite: projectionLimit.toFixed(1).replace('.0', ''),
-                    prescreveu: false,
-                    alerta: anosRestantes <= 1,
+                    prescreveu: hasPrescritoByProjecao,
+                    alerta: !hasPrescritoByProjecao && anosRestantes <= 1,
                     suspenso: false,
                     isExpectation: true
                 });
-                projecaoPrescricaoTotal = `A prescrição se consumará (em tese) em ${formatDateBr(dataProjetada)}, caso não haja novo marco.`;
+                
+                if (hasPrescritoByProjecao) {
+                    projecaoPrescricaoTotal = `A prescrição se consumou (em tese) em ${formatDateBr(dataProjetada)} (PRESCRIÇÃO CONSUMADA).`;
+                } else {
+                    projecaoPrescricaoTotal = `A prescrição se consumará (em tese) em ${formatDateBr(dataProjetada)}, caso não haja novo marco.`;
+                }
             }
         }
 
