@@ -74,7 +74,6 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         infracao: '',
         penaMaxAnos: 0, penaMaxMeses: 0,
         penaAplAnos: 0, penaAplMeses: 0,
-        regime: '',
         // Bloco 3
         dataFato: '', dataDenuncia: '', dataPronuncia: '', dataConfirmacaoPronuncia: '',
         dataSentenca: '', dataInicioPena: '', dataReincidencia: '',
@@ -331,15 +330,6 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                                 <input type="number" placeholder="Meses" value={data.penaAplMeses || ''} onChange={e => handleChange('penaAplMeses', parseInt(e.target.value))} className="w-1/2 border rounded p-1 text-sm outline-none" min="0" max="11"/>
                             </div>
                         </div>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Regime Inicial</label>
-                        <select value={data.regime} onChange={e => handleChange('regime', e.target.value)} className="w-full border rounded p-2 text-sm outline-none">
-                            <option value="">Selecione...</option>
-                            <option value="Aberto">Aberto</option>
-                            <option value="Semiaberto">Semiaberto</option>
-                            <option value="Fechado">Fechado</option>
-                        </select>
                     </div>
                 </section>
 
