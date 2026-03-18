@@ -143,42 +143,62 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         if (data.dataInicioPena) marcos.push({ label: 'Início do Cumprimento', date: data.dataInicioPena });
         if (data.dataReincidencia) marcos.push({ label: 'Reincidência', date: data.dataReincidencia });
 
+        const dataFimSuspensao = data.citadoEdital && data.dataSuspensao ? addYearsToDate(data.dataSuspensao, prazoAbstrato) : '';
+        const marcosComSuspensao = [...marcos];
+        if (dataFimSuspensao && data.dataSuspensao) {
+            marcosComSuspensao.push({ label: 'Suspensão (Art. 366)', date: data.dataSuspensao, isSuspension: true });
+            marcosComSuspensao.push({ label: 'Retomada (Súmula 415)', date: dataFimSuspensao, isRetomada: true });
+        }
+        marcosComSuspensao.sort((a, b) => a.date.localeCompare(b.date));
+
         const analiseIntervalos = [];
         let prescrito = false;
-        let dataPrescricao = '';
+        let diffAcumuladaDias = 0; 
 
-        for (let i = 0; i < marcos.length - 1; i++) {
-            let paramLimit = prazoAbstrato;
+        for (let i = 0; i < marcosComSuspensao.length - 1; i++) {
+            const mStart = marcosComSuspensao[i];
+            const mEnd = marcosComSuspensao[i + 1];
             
-            // Check if we use Concrete (Art. 110, §1 CP)
+            const isSuspendedPeriod = mStart.isSuspension || (marcosComSuspensao.some(m => m.isSuspension && m.date <= mStart.date) && !mStart.isRetomada && mEnd.date <= dataFimSuspensao);
+            
+            let paramLimit = prazoAbstrato;
             if (prazoConcreto) {
-                const isAfterDenuncia = !!data.dataDenuncia && marcos[i].date >= data.dataDenuncia;
+                const isAfterDenuncia = !!data.dataDenuncia && mStart.date >= data.dataDenuncia;
                 const isBefore2010 = !!data.dataFato && data.dataFato < '2010-05-05';
-                
-                // If it's after indictment, or if facts are before 2010, use concrete.
-                if (isAfterDenuncia || isBefore2010) {
-                    paramLimit = prazoConcreto;
-                }
+                if (isAfterDenuncia || isBefore2010) paramLimit = prazoConcreto;
             }
 
-            // Reincidência increase +1/3 (Art. 110 CP) - Only applies AFTER transito (PPE phase)
-            if (data.dataReincidencia && marcos[i].date >= (data.dataInicioPena || '9999-12-31')) {
+            if (data.dataReincidencia && mStart.date >= (data.dataInicioPena || '9999-12-31')) {
                 paramLimit = paramLimit * 1.3333;
             }
-            
-            // Note: Lei 12.234/2010 forbids retroactivity before Denuncia. We should notice it, but for simplicity, we use the rule requested implicitly.
-            const diff = diffFormat(marcos[i].date, marcos[i+1].date);
+
+            const diff = diffFormat(mStart.date, mEnd.date);
             if (!diff) continue;
 
-            const hasPrescribed = diff.diasTotal > (paramLimit * 365.25);
-            if (hasPrescribed) prescrito = true;
+            const isRealResettable = !mStart.isSuspension && !mStart.isRetomada && i > 0;
+            if (isRealResettable) diffAcumuladaDias = 0;
+
+            if (!isSuspendedPeriod) {
+                diffAcumuladaDias += diff.diasTotal;
+            }
+
+            const anosAcumulados = diffAcumuladaDias / 365.25;
+            const isPrescritoInt = !isSuspendedPeriod && anosAcumulados >= paramLimit;
+            const isAlertaInt = !isSuspendedPeriod && !isPrescritoInt && anosAcumulados >= (paramLimit - 1);
+
+            if (isPrescritoInt) prescrito = true;
 
             analiseIntervalos.push({
-                de: marcos[i].label,
-                ate: marcos[i+1].label,
+                de: mStart.label,
+                ate: mEnd.label,
+                dateDe: mStart.date,
+                dateAte: mEnd.date,
                 diff,
-                limite: paramLimit,
-                prescreveu: hasPrescribed
+                acumuladoAnos: anosAcumulados,
+                limite: paramLimit.toFixed(1).replace('.0', ''),
+                prescreveu: isPrescritoInt,
+                alerta: isAlertaInt,
+                suspenso: isSuspendedPeriod
             });
         }
 
@@ -186,7 +206,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         let suspensaoText = '';
         let projecaoPrescricaoTotal = '';
         if (data.citadoEdital && data.dataSuspensao) {
-            const dataFimSuspensao = addYearsToDate(data.dataSuspensao, prazoAbstrato);
+            // dataFimSuspensao already calculated above
             suspensaoText = `O prazo máximo de suspensão da prescrição (Súmula 415/STJ) encerrará em ${formatDateBr(dataFimSuspensao)}.`;
             const dataConsumacao366 = addYearsToDate(dataFimSuspensao, prazoAtivo);
             projecaoPrescricaoTotal = `A prescrição total / art. 366 se consumará em ${formatDateBr(dataConsumacao366)}.`;
@@ -273,12 +293,24 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
             if (report.analiseIntervalos.length > 0) {
                 const head = [["De", "Ate", "Lapso Calculado", "Limite", "Status"]];
                 const body = report.analiseIntervalos.map((i: any) => [
-                    i.de, i.ate, `${i.diff.anos}a ${i.diff.meses}m ${i.diff.dias}d`, `${i.limite} anos`, i.prescreveu ? "PRESCRITO" : "Ok"
+                    i.de, i.ate, 
+                    i.suspenso ? "PRAZO SUSPENSO" : `${i.diff.anos}a ${i.diff.meses}m ${i.diff.dias}d`, 
+                    i.suspenso ? "---" : `${i.limite} anos`, 
+                    i.suspenso ? "SUSPENSO" : (i.prescreveu ? "PRESCRITO" : (i.alerta ? "ALERTA" : "OK"))
                 ]);
                 autoTable(doc, { 
                     head, body, startY: y, 
                     styles: { fontSize: 8 }, 
-                    headStyles: { fillColor: [40, 40, 40] } 
+                    headStyles: { fillColor: [40, 40, 40] },
+                    didParseCell: (data) => {
+                        if (data.section === 'body' && data.column.index === 4) {
+                            const val = data.cell.text[0];
+                            if (val === 'PRESCRITO') data.cell.styles.textColor = [200, 0, 0];
+                            if (val === 'ALERTA') data.cell.styles.textColor = [200, 100, 0];
+                            if (val === 'OK') data.cell.styles.textColor = [0, 120, 0];
+                            if (val === 'SUSPENSO') data.cell.styles.textColor = [0, 0, 200];
+                        }
+                    }
                 });
                 y = (doc as any).lastAutoTable.finalY + 10;
             } else {
@@ -522,14 +554,22 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {report.analiseIntervalos.map((interval: any, idx) => (
-                                                    <tr key={idx} className="border-b last:border-b-0">
+                                                {report.analiseIntervalos.map((interval: any, idx: number) => (
+                                                    <tr key={idx} className={`border-b border-black/10 last:border-b-0 ${interval.suspenso ? 'bg-blue-50/30 font-italic text-blue-900' : ''}`}>
                                                         <td className="p-2">{interval.de}</td>
                                                         <td className="p-2">{interval.ate}</td>
-                                                        <td className="p-2">{interval.diff.anos}a {interval.diff.meses}m {interval.diff.dias}d</td>
-                                                        <td className="p-2 text-center text-gray-500">{interval.limite} anos</td>
-                                                        <td className={`p-2 font-bold text-center uppercase ${interval.prescreveu ? 'text-red-600' : 'text-green-600'}`}>
-                                                            {interval.prescreveu ? 'Prescrito' : 'Ok'}
+                                                        <td className="p-2 text-center font-medium">
+                                                            {interval.suspenso ? 'Suspenso' : `${interval.diff.anos}a ${interval.diff.meses}m ${interval.diff.dias}d`}
+                                                        </td>
+                                                        <td className="p-2 text-center text-gray-600">{interval.suspenso ? '---' : `${interval.limite} anos`}</td>
+                                                        <td className={`p-2 font-bold text-center uppercase ${
+                                                            interval.suspenso ? 'text-blue-600' : 
+                                                            interval.prescreveu ? 'text-red-600' : 
+                                                            interval.alerta ? 'text-orange-500 underline' : 'text-green-700'
+                                                        }`}>
+                                                            {interval.suspenso ? 'SUSPENSO' : 
+                                                             interval.prescreveu ? 'PRESCRITO' : 
+                                                             interval.alerta ? 'ALERTA' : 'OK'}
                                                         </td>
                                                     </tr>
                                                 ))}
