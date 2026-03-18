@@ -102,9 +102,14 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
     const report = useMemo(() => {
         if (!data.infracao || (data.penaMaxAnos === 0 && data.penaMaxMeses === 0)) return null;
 
-        // Base Prescription Terms
-        let prazoAbstrato = getPrazo(data.penaMaxAnos, data.penaMaxMeses);
-        let prazoConcreto = data.penaAplAnos || data.penaAplMeses ? getPrazo(data.penaAplAnos, data.penaAplMeses) : null;
+        // Base Prescription Terms (Ensure numbers)
+        const pMaxA = parseFloat(data.penaMaxAnos as any || 0);
+        const pMaxM = parseFloat(data.penaMaxMeses as any || 0);
+        const pAplA = parseFloat(data.penaAplAnos as any || 0);
+        const pAplM = parseFloat(data.penaAplMeses as any || 0);
+
+        let prazoAbstrato = getPrazo(pMaxA, pMaxM);
+        let prazoConcreto = (pAplA > 0 || pAplM > 0) ? getPrazo(pAplA, pAplM) : null;
         
         let prazoAtivo = prazoConcreto || prazoAbstrato;
 
@@ -143,12 +148,22 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         let dataPrescricao = '';
 
         for (let i = 0; i < marcos.length - 1; i++) {
-            let paramLimit = (marcos[i+1].date <= (data.dataSentenca || '9999-12-31') && prazoConcreto) ? prazoConcreto : prazoAbstrato;
+            let paramLimit = prazoAbstrato;
             
+            // Check if we use Concrete (Art. 110, §1 CP)
+            if (prazoConcreto) {
+                const isAfterDenuncia = !!data.dataDenuncia && marcos[i].date >= data.dataDenuncia;
+                const isBefore2010 = !!data.dataFato && data.dataFato < '2010-05-05';
+                
+                // If it's after indictment, or if facts are before 2010, use concrete.
+                if (isAfterDenuncia || isBefore2010) {
+                    paramLimit = prazoConcreto;
+                }
+            }
+
             // Reincidência increase +1/3 (Art. 110 CP) - Only applies AFTER transito (PPE phase)
-            // If the start of this interval is after transito (dataInicioPena), apply increase
             if (data.dataReincidencia && marcos[i].date >= (data.dataInicioPena || '9999-12-31')) {
-                paramLimit = paramLimit * 1.3333; // +1/3
+                paramLimit = paramLimit * 1.3333;
             }
             
             // Note: Lei 12.234/2010 forbids retroactivity before Denuncia. We should notice it, but for simplicity, we use the rule requested implicitly.
