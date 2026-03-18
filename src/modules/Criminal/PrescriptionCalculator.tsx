@@ -154,6 +154,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         const analiseIntervalos = [];
         let prescrito = false;
         let diffAcumuladaDias = 0; 
+        let ultimoParamLimit = prazoAbstrato;
 
         for (let i = 0; i < marcosComSuspensao.length - 1; i++) {
             const mStart = marcosComSuspensao[i];
@@ -171,6 +172,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
             if (data.dataReincidencia && mStart.date >= (data.dataInicioPena || '9999-12-31')) {
                 paramLimit = paramLimit * 1.3333;
             }
+            ultimoParamLimit = paramLimit;
 
             const diff = diffFormat(mStart.date, mEnd.date);
             if (!diff) continue;
@@ -202,17 +204,32 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
             });
         }
 
-        // Suspensions (Art. 366 CPP)
-        let suspensaoText = '';
+        // Add Future Expectation Row if not prescribed
         let projecaoPrescricaoTotal = '';
+        if (!prescrito && marcosComSuspensao.length > 0) {
+            const lastMarco = marcosComSuspensao[marcosComSuspensao.length - 1];
+            const anosRestantes = ultimoParamLimit - (diffAcumuladaDias / 365.25);
+            const dataProjetada = addYearsToDate(lastMarco.date, anosRestantes);
+            
+            if (dataProjetada) {
+                analiseIntervalos.push({
+                    de: lastMarco.label,
+                    ate: 'Expectativa de Prescrição Final',
+                    diff: { anos: Math.floor(anosRestantes), meses: Math.floor((anosRestantes % 1) * 12), dias: 0 },
+                    limite: ultimoParamLimit.toFixed(1).replace('.0', ''),
+                    prescreveu: false,
+                    alerta: anosRestantes <= 1,
+                    suspenso: false,
+                    isExpectation: true
+                });
+                projecaoPrescricaoTotal = `A prescrição se consumará (em tese) em ${formatDateBr(dataProjetada)}, caso não haja novo marco.`;
+            }
+        }
+
+        // Specific Suspension Text
+        let suspensaoText = '';
         if (data.citadoEdital && data.dataSuspensao) {
-            // dataFimSuspensao already calculated above
             suspensaoText = `O prazo máximo de suspensão da prescrição (Súmula 415/STJ) encerrará em ${formatDateBr(dataFimSuspensao)}.`;
-            const dataConsumacao366 = addYearsToDate(dataFimSuspensao, prazoAtivo);
-            projecaoPrescricaoTotal = `A prescrição total / art. 366 se consumará em ${formatDateBr(dataConsumacao366)}.`;
-        } else if (marcos.length > 0) {
-            const ultimoMarco = marcos[marcos.length - 1].date;
-            projecaoPrescricaoTotal = `A prescrição total se consumará em ${formatDateBr(addYearsToDate(ultimoMarco, prazoAtivo))}, caso não haja novo marco.`;
         }
 
         return {
@@ -294,9 +311,9 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                 const head = [["De", "Ate", "Lapso Calculado", "Limite", "Status"]];
                 const body = report.analiseIntervalos.map((i: any) => [
                     i.de, i.ate, 
-                    i.suspenso ? "PRAZO SUSPENSO" : `${i.diff.anos}a ${i.diff.meses}m ${i.diff.dias}d`, 
+                    i.suspenso ? "PRAZO SUSPENSO" : (i.isExpectation ? "---" : `${i.diff.anos}a ${i.diff.meses}m ${i.diff.dias}d`), 
                     i.suspenso ? "---" : `${i.limite} anos`, 
-                    i.suspenso ? "SUSPENSO" : (i.prescreveu ? "PRESCRITO" : (i.alerta ? "ALERTA" : "OK"))
+                    i.suspenso ? "SUSPENSO" : (i.prescreveu ? "PRESCRITO" : (i.isExpectation ? "PROJECAO" : (i.alerta ? "ALERTA" : "OK")))
                 ]);
                 autoTable(doc, { 
                     head, body, startY: y, 
@@ -307,6 +324,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                             const val = data.cell.text[0];
                             if (val === 'PRESCRITO') data.cell.styles.textColor = [200, 0, 0];
                             if (val === 'ALERTA') data.cell.styles.textColor = [200, 100, 0];
+                            if (val === 'PROJECAO') data.cell.styles.textColor = [100, 0, 180];
                             if (val === 'OK') data.cell.styles.textColor = [0, 120, 0];
                             if (val === 'SUSPENSO') data.cell.styles.textColor = [0, 0, 200];
                         }
@@ -555,21 +573,21 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                                             </thead>
                                             <tbody>
                                                 {report.analiseIntervalos.map((interval: any, idx: number) => (
-                                                    <tr key={idx} className={`border-b border-black/10 last:border-b-0 ${interval.suspenso ? 'bg-blue-50/30 font-italic text-blue-900' : ''}`}>
+                                                    <tr key={idx} className={`border-b border-black/10 last:border-b-0 ${interval.suspenso ? 'bg-blue-50/30 font-italic text-blue-900' : (interval.isExpectation ? 'bg-gray-50 italic text-gray-500' : '')}`}>
                                                         <td className="p-2">{interval.de}</td>
                                                         <td className="p-2">{interval.ate}</td>
                                                         <td className="p-2 text-center font-medium">
-                                                            {interval.suspenso ? 'Suspenso' : `${interval.diff.anos}a ${interval.diff.meses}m ${interval.diff.dias}d`}
+                                                            {interval.suspenso ? 'Suspenso' : (interval.isExpectation ? '---' : `${interval.diff.anos}a ${interval.diff.meses}m ${interval.diff.dias}d`)}
                                                         </td>
                                                         <td className="p-2 text-center text-gray-600">{interval.suspenso ? '---' : `${interval.limite} anos`}</td>
                                                         <td className={`p-2 font-bold text-center uppercase ${
                                                             interval.suspenso ? 'text-blue-600' : 
                                                             interval.prescreveu ? 'text-red-600' : 
-                                                            interval.alerta ? 'text-orange-500 underline' : 'text-green-700'
+                                                            interval.alerta ? (interval.isExpectation ? 'text-orange-500' : 'text-orange-500 underline') : 'text-green-700'
                                                         }`}>
                                                             {interval.suspenso ? 'SUSPENSO' : 
                                                              interval.prescreveu ? 'PRESCRITO' : 
-                                                             interval.alerta ? 'ALERTA' : 'OK'}
+                                                             (interval.isExpectation ? 'FINAL (PROJEÇÃO)' : (interval.alerta ? 'ALERTA' : 'OK'))}
                                                         </td>
                                                     </tr>
                                                 ))}
