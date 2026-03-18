@@ -161,6 +161,12 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
             const mStart = marcosComSuspensao[i];
             const mEnd = marcosComSuspensao[i + 1];
             
+            // Interruption (Art. 117 CP): Reset the clock!
+            const isInterruptive = !mStart.isSuspension && !mStart.isRetomada;
+            if (isInterruptive && i > 0) {
+                diffAcumuladaDias = 0;
+            }
+
             const isSuspendedPeriod = mStart.isSuspension || (marcosComSuspensao.some(m => m.isSuspension && m.date <= mStart.date) && !mStart.isRetomada && mEnd.date <= dataFimSuspensao);
             
             let paramLimit = prazoAbstrato;
@@ -178,9 +184,6 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
 
             const diff = diffFormat(mStart.date, mEnd.date);
             if (!diff) continue;
-
-            const isRealResettable = !mStart.isSuspension && !mStart.isRetomada && i > 0;
-            if (isRealResettable) diffAcumuladaDias = 0;
 
             if (!isSuspendedPeriod) {
                 diffAcumuladaDias += diff.diasTotal;
@@ -223,6 +226,12 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
             }
             if (data.dataReincidencia && lastMarco.date >= (data.dataInicioPena || '9999-12-31')) {
                 projectionLimit = projectionLimit * 1.3333;
+            }
+
+            // RESET current accumulation for the NEXT period starting from the last milestone
+            // ONLY if the last milestone was an interruption (which they all are except virtual ones)
+            if (!lastMarco.isSuspension && !lastMarco.isRetomada) {
+                diffAcumuladaDias = 0;
             }
 
             const anosAcumuladosAteAgora = diffAcumuladaDias / 365.25;
