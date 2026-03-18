@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import jsPDF from 'jspdf';
-import { Type, Download, AlignJustify, Quote, RefreshCw, Copy, Check, Heading, FileText, Eraser } from 'lucide-react';
+import { Type, Download, AlignJustify, Quote, RefreshCw, Copy, Check, Heading, FileText, Eraser, AlignCenter, Bold } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, convertInchesToTwip } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -12,6 +12,8 @@ interface Block {
     id: string;
     text: string;
     type: 'normal' | 'quote' | 'title';
+    isCenter?: boolean;
+    isBold?: boolean;
 }
 
 function toRoman(num: number): string {
@@ -139,21 +141,34 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
         const rawHtml = processNode(editorRef.current).replace(/\n\n+/g, '\n').trim();
         const lines = rawHtml.split('\n').filter(line => line.trim() !== '');
 
-        const newBlocks: Block[] = lines.map((line, index) => {
-            const cleanText = stripHtml(line).trim();
-            // Detectar automaticamente se é um título estrito e sem numeração prévia
-            // Considera apenas (Relatório, Fundamentação, Dispositivo, Conclusão)
-            // A regex ^(...)$ garante que a string inteira seja apenas a palavra, excluindo casos com numeração
-            const isTypicalTitle = /^(relat[óo]rio|fundamenta[çc][ãa]o|dispositivo|conclus[ãa]o)$/i.test(cleanText);
-            
-            return {
-                id: `block-${index}-${Date.now()}`,
-                text: line.trim(),
-                type: isTypicalTitle ? 'title' : 'normal'
-            };
+        setBlocks(prevBlocks => {
+            return lines.map((line, index) => {
+                const cleanText = stripHtml(line).trim();
+                const trimmedLine = line.trim();
+                // Detectar automaticamente se é um título estrito e sem numeração prévia
+                // Considera apenas (Relatório, Fundamentação, Dispositivo, Conclusão)
+                // A regex ^(...)$ garante que a string inteira seja apenas a palavra, excluindo casos com numeração
+                const isTypicalTitle = /^(relat[óo]rio|fundamenta[çc][ãa]o|dispositivo|conclus[ãa]o)$/i.test(cleanText);
+                
+                // 1. Try exact match to preserve state when paragraphs are added/removed above this line
+                let existingBlock = prevBlocks.find(b => b.text === trimmedLine);
+                // 2. Try index match as a fallback for slow typers editing a line in place
+                if (!existingBlock) {
+                    existingBlock = prevBlocks[index];
+                }
+
+                if (existingBlock) {
+                    return { ...existingBlock, text: trimmedLine };
+                }
+
+                return {
+                    id: `block-${index}-${Date.now()}`,
+                    text: trimmedLine,
+                    type: isTypicalTitle ? 'title' : 'normal'
+                };
+            });
         });
 
-        setBlocks(newBlocks);
         setCopied(false);
     };
 
@@ -168,6 +183,11 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
             }
             return b;
         }));
+        setCopied(false);
+    };
+
+    const toggleBlockProperty = (id: string, property: 'isCenter' | 'isBold') => {
+        setBlocks(blocks.map(b => (b.id === id ? { ...b, [property]: !b[property] } : b)));
         setCopied(false);
     };
 
@@ -214,6 +234,16 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                     el.innerHTML = `<span style="font-size: 13pt; line-height: 1.5;">${block.text}</span>`;
                 }
 
+                if (block.isCenter) {
+                    el.style.textAlign = 'center';
+                    el.style.textIndent = '0';
+                }
+                
+                if (block.isBold && block.type !== 'title') {
+                    // Title is already bolded above, but let's apply for normal/quote
+                    el.innerHTML = `<strong>${el.innerHTML}</strong>`;
+                }
+
                 container.appendChild(el);
             });
 
@@ -257,20 +287,38 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
             const isQuote = block.type === 'quote';
             const isTitle = block.type === 'title';
 
-            let textContent = block.text;
-            let childrenRuns: TextRun[] = [];
+            let pStyle = 'Normal';
+            let indent: any = { firstLine: convertInchesToTwip(0.787402) }; // 2cm
+            let alignment = AlignmentType.JUSTIFIED;
+
+            if (isQuote) {
+                pStyle = 'QuoteStyle';
+                indent = { left: convertInchesToTwip(1.5748) }; // 4cm
+            } else if (isTitle) {
+                pStyle = 'TitleStyle';
+                indent = { firstLine: convertInchesToTwip(0.787402) }; // 2cm
+            }
+
+            if (block.isCenter) {
+                alignment = AlignmentType.CENTER;
+                indent = undefined; // Center usually overrides first line indent
+            }
+
+            let outputText = block.text;
+            if (block.isBold && !isTitle) { // Titles are bolded by default
+                outputText = `<strong>${outputText}</strong>`;
+            }
+
+            const runs = htmlToDocxChildren(outputText, isQuote ? 22 : 26);
 
             if (isTitle) {
                 const prefix = `${toRoman(titleCounter++)} - `;
-                textContent = `${prefix}${stripHtml(block.text).toUpperCase()}`;
-                childrenRuns = [new TextRun({
-                    text: textContent,
+                runs.unshift(new TextRun({
+                    text: prefix,
                     font: "Century Gothic",
                     size: 26,
                     bold: true,
-                })];
-            } else {
-                childrenRuns = htmlToDocxChildren(block.text, isQuote ? 22 : 26);
+                }));
             }
 
             return new Paragraph({
@@ -359,13 +407,17 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
 
         let titleCounter = 1;
         blocks.forEach(block => {
+            let styleStr = '';
+            if (block.isCenter) styleStr += 'text-align: center; text-indent: 0; ';
+            if (block.isBold && block.type !== 'title') styleStr += 'font-weight: bold; ';
+
             if (block.type === 'quote') {
-                htmlContent += `<p class="quote">${block.text}</p>`;
+                htmlContent += `<p class="quote" style="${styleStr}">${block.text}</p>`;
             } else if (block.type === 'title') {
                 const prefix = `${toRoman(titleCounter++)} - `;
-                htmlContent += `<p class="title">${prefix}${stripHtml(block.text).toUpperCase()}</p>`;
+                htmlContent += `<p class="title" style="${styleStr}">${prefix}${stripHtml(block.text).toUpperCase()}</p>`;
             } else {
-                htmlContent += `<p class="normal">${block.text}</p>`;
+                htmlContent += `<p class="normal" style="${styleStr}">${block.text}</p>`;
             }
         });
 
@@ -494,20 +546,40 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                                         className="mb-4 text-justify relative group"
                                         style={{
                                             marginLeft: block.type === 'quote' ? '4cm' : '0',
-                                            textIndent: block.type === 'quote' ? '0' : '2cm',
+                                            textIndent: block.isCenter || block.type === 'quote' ? '0' : '2cm',
                                             fontSize: block.type === 'quote' ? '11pt' : '13pt',
-                                            fontWeight: block.type === 'title' ? 'bold' : undefined,
+                                            fontWeight: (block.type === 'title' || block.isBold) ? 'bold' : undefined,
                                             textTransform: block.type === 'title' ? 'uppercase' : 'none',
+                                            textAlign: block.isCenter ? 'center' : 'justify',
                                         }}
                                     >
+                                        {/* Floating Menu Action Palette */}
                                         <div
-                                            className="absolute -left-8 top-1 opacity-20 group-hover:opacity-100 text-gray-500 cursor-pointer hover:text-justice-600 transition-all p-1 bg-gray-50 rounded-md shadow-sm border border-gray-100"
-                                            onClick={() => toggleBlockType(block.id)}
-                                            title="Clique para alternar estilo (Título / Citação / Normal)"
+                                            className="absolute -left-10 top-1 flex flex-col gap-1 opacity-20 group-hover:opacity-100 transition-all z-10"
                                         >
-                                            {block.type === 'quote' && <Quote size={14} />}
-                                            {block.type === 'title' && <Heading size={14} />}
-                                            {block.type === 'normal' && <AlignJustify size={14} />}
+                                            <div
+                                                className="text-gray-500 cursor-pointer hover:text-justice-600 transition-all p-1.5 bg-gray-50 rounded-md shadow-sm border border-gray-100"
+                                                onClick={() => toggleBlockType(block.id)}
+                                                title="Alternar estilo (Título / Citação / Normal)"
+                                            >
+                                                {block.type === 'quote' && <Quote size={14} />}
+                                                {block.type === 'title' && <Heading size={14} />}
+                                                {block.type === 'normal' && <AlignJustify size={14} />}
+                                            </div>
+                                            <div
+                                                className={`cursor-pointer transition-all p-1.5 rounded-md shadow-sm border ${block.isCenter ? 'bg-justice-100 border-justice-300 text-justice-700' : 'bg-gray-50 border-gray-100 text-gray-500 hover:text-justice-600'}`}
+                                                onClick={() => toggleBlockProperty(block.id, 'isCenter')}
+                                                title="Centralizar"
+                                            >
+                                                <AlignCenter size={14} />
+                                            </div>
+                                            <div
+                                                className={`cursor-pointer transition-all p-1.5 rounded-md shadow-sm border ${block.isBold ? 'bg-justice-100 border-justice-300 text-justice-700' : 'bg-gray-50 border-gray-100 text-gray-500 hover:text-justice-600'}`}
+                                                onClick={() => toggleBlockProperty(block.id, 'isBold')}
+                                                title="Negrito Numérico"
+                                            >
+                                                <Bold size={14} />
+                                            </div>
                                         </div>
                                         {prefix}
                                         <span
