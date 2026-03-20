@@ -1,11 +1,22 @@
 import React, { useState, useRef } from 'react';
 import jsPDF from 'jspdf';
-import { Type, Download, AlignJustify, Quote, RefreshCw, Copy, Check, Heading, FileText, Eraser, AlignCenter, Bold } from 'lucide-react';
+import { Type, Download, AlignJustify, Quote, RefreshCw, Copy, Check, Heading, FileText, Eraser, AlignCenter, Bold, Settings, Save, X } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, convertInchesToTwip } from 'docx';
 import { saveAs } from 'file-saver';
 
 interface FormatterDashboardProps {
     session: any;
+    unitSettings: {
+        fontFamily: string;
+        fontSize: number;
+        marginTop: number;
+        marginBottom: number;
+        marginLeft: number;
+        marginRight: number;
+        indent: number;
+    };
+    onUpdateSettings: (newSettings: any) => Promise<void>;
+    isAdmin: boolean;
 }
 
 interface Block {
@@ -43,7 +54,7 @@ function htmlToDocxChildren(html: string, size: number): TextRun[] {
                     bold: bold,
                     italics: italic,
                     underline: underline ? { type: "single", color: "auto" } : undefined,
-                    font: "Century Gothic",
+                    font: unitSettings.fontFamily,
                     size: size,
                 }));
             }
@@ -68,11 +79,18 @@ const stripHtml = (html: string) => {
     return temp.textContent || '';
 };
 
-export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session }) => {
+export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session, unitSettings, onUpdateSettings, isAdmin }) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [blocks, setBlocks] = useState<Block[]>([]);
     const [copied, setCopied] = useState(false);
     const [autoClean, setAutoClean] = useState(true);
+    const [showSettings, setShowSettings] = useState(false);
+    const [localSettings, setLocalSettings] = useState(unitSettings);
+
+    // Sync local settings when prop changes
+    React.useEffect(() => {
+        setLocalSettings(unitSettings);
+    }, [unitSettings]);
 
     const handleClear = () => {
         if (editorRef.current) {
@@ -89,8 +107,7 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
             if (node.nodeType === Node.TEXT_NODE) {
                 let text = node.textContent || '';
 
-                // Prevent hidden \n from Word/PDF breaking our line splits
-                text = text.replace(/[\r\n]+/g, ' ');
+                // Preserve \n if they exist in text nodes (common when pasting or using Shift+Enter)
 
                 if (autoClean) {
                     text = text.replace(/\s*\[\s*\d{7}-\d{2}[^\]]*\|\s*[a-zA-Z]+\s*\]/g, '');
@@ -121,6 +138,7 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
 
                 let result = inner;
                 if (result.trim()) {
+                    // Check if block tags already ended with \n to avoid double breaks
                     if (isBold) result = result.split('\n').map(line => line.trim() ? `<strong>${line}</strong>` : line).join('\n');
                     if (isItalic) result = result.split('\n').map(line => line.trim() ? `<em>${line}</em>` : line).join('\n');
                     if (isUnderline) result = result.split('\n').map(line => line.trim() ? `<u>${line}</u>` : line).join('\n');
@@ -138,7 +156,8 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
             return '';
         };
 
-        const rawHtml = processNode(editorRef.current).replace(/\n\n+/g, '\n').trim();
+        // Ensure single \n are preserved for text processing
+        const rawHtml = processNode(editorRef.current).trim();
         const lines = rawHtml.split('\n').filter(line => line.trim() !== '');
 
         setBlocks(prevBlocks => {
@@ -146,9 +165,9 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                 const cleanText = stripHtml(line).trim();
                 const trimmedLine = line.trim();
                 // Detectar automaticamente se é um título estrito e sem numeração prévia
-                // Considera apenas (Relatório, Fundamentação, Dispositivo, Conclusão)
-                // A regex ^(...)$ garante que a string inteira seja apenas a palavra, excluindo casos com numeração
-                const isTypicalTitle = /^(relat[óo]rio|fundamenta[çc][ãa]o|dispositivo|conclus[ãa]o)$/i.test(cleanText);
+                // Considera apenas (Relatório, Fundamentação, Dispositivo, Conclusão, etc.)
+                // A regex permite flexibilidade de acentuação e espaços, agindo apenas em palavras isoladas
+                const isTypicalTitle = /^\s*(relat[óo]rio|fundamenta[çc][ãa]o|dispositivo|conclus[ãa]o|decis[ãa]o|senten[çc]a|despacho|ementa|voto)\s*$/i.test(cleanText);
                 
                 // 1. Try exact match to preserve state when paragraphs are added/removed above this line
                 let existingBlock = prevBlocks.find(b => b.text === trimmedLine);
@@ -279,15 +298,15 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
             const isTitle = block.type === 'title';
 
             let pStyle = 'Normal';
-            let indent: any = { firstLine: convertInchesToTwip(0.787402) }; // 2cm
-            let alignment = AlignmentType.JUSTIFIED;
+            let indent: any = { firstLine: convertInchesToTwip(unitSettings.indent / 2.54) }; // Convert cm to inches then to twips
+            let alignment: any = AlignmentType.JUSTIFIED;
 
             if (isQuote) {
                 pStyle = 'QuoteStyle';
-                indent = { left: convertInchesToTwip(1.5748) }; // 4cm
+                indent = { left: convertInchesToTwip(1.5748) }; // 4cm still default for long quotes? 
             } else if (isTitle) {
                 pStyle = 'TitleStyle';
-                indent = { firstLine: convertInchesToTwip(0.787402) }; // 2cm
+                indent = { firstLine: convertInchesToTwip(unitSettings.indent / 2.54) };
             }
 
             if (block.isCenter) {
@@ -313,17 +332,15 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
             }
 
             return new Paragraph({
-                alignment: AlignmentType.JUSTIFIED,
-                indent: isQuote
-                    ? { left: convertInchesToTwip(1.57) } // 4cm
-                    : { firstLine: convertInchesToTwip(0.79) }, // 2cm
+                alignment: alignment,
+                indent: indent,
                 spacing: {
                     line: 360, // 240 is single space, 360 is 1.5 space
                     lineRule: "auto",
                     before: 0,
                     after: 240, // 12pt space after paragraph (twips = pt * 20)
                 },
-                children: childrenRuns
+                children: runs
             });
         });
 
@@ -333,10 +350,10 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                     properties: {
                         page: {
                             margin: {
-                                top: convertInchesToTwip(0.39), // 1cm
-                                right: convertInchesToTwip(0.39),
-                                bottom: convertInchesToTwip(0.39),
-                                left: convertInchesToTwip(0.39),
+                                top: convertInchesToTwip(unitSettings.marginTop / 2.54),
+                                right: convertInchesToTwip(unitSettings.marginRight / 2.54),
+                                bottom: convertInchesToTwip(unitSettings.marginBottom / 2.54),
+                                left: convertInchesToTwip(unitSettings.marginLeft / 2.54),
                             },
                         },
                     },
@@ -345,9 +362,13 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
             ],
         });
 
-        Packer.toBlob(doc).then(blob => {
+        try {
+            const blob = await Packer.toBlob(doc);
             saveAs(blob, "Minuta_Formatada.docx");
-        });
+        } catch (error) {
+            console.error("Erro ao gerar DOCX:", error);
+            alert("Erro ao gerar o arquivo Word. Verifique o console para mais detalhes.");
+        }
     };
 
     const handleExportPDF = () => {
@@ -366,10 +387,16 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
             <head>
                 <title>Minuta_Formatada</title>
                 <style>
-                    @page { size: A4; margin: 1cm; }
+                    @page { 
+                        size: A4; 
+                        margin-top: ${unitSettings.marginTop}cm; 
+                        margin-left: ${unitSettings.marginLeft}cm; 
+                        margin-right: ${unitSettings.marginRight}cm; 
+                        margin-bottom: ${unitSettings.marginBottom}cm; 
+                    }
                     body { 
-                        font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif;
-                        font-size: 13pt;
+                        font-family: "${unitSettings.fontFamily}", "Century Gothic", CenturyGothic, AppleGothic, sans-serif;
+                        font-size: ${unitSettings.fontSize}pt;
                         line-height: 1.5;
                         text-align: justify;
                         color: black;
@@ -447,6 +474,27 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                     <p className="text-sm text-gray-500">Padronização de ofícios, portarias e decisões</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                    {isAdmin && (
+                        <button 
+                            onClick={() => setShowSettings(true)} 
+                            className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition-all flex items-center gap-2 font-medium"
+                            title="Configurar Padrão da Unidade"
+                        >
+                            <Settings size={18} /> Configurações
+                        </button>
+                    )}
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={handleProcessText}
+                            className="bg-justice-100 text-justice-700 px-4 py-2 rounded-lg hover:bg-justice-200 transition-all flex items-center gap-2 font-medium"
+                            title="Forçar atualização da formatação"
+                        >
+                            <RefreshCw size={18} /> Atualizar
+                        </button>
+                        <button onClick={handleClear} className="bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition-all flex items-center gap-2 font-medium border border-red-100">
+                            <Eraser size={18} /> Limpar
+                        </button>
+                    </div>
                     <button onClick={handleExportDOCX} className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition-all flex items-center gap-2 font-medium">
                         <FileText size={18} /> Baixar Word
                     </button>
@@ -455,6 +503,118 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                     </button>
                 </div>
             </div>
+
+            {/* Settings Modal */}
+            {showSettings && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="bg-justice-900 p-4 text-white flex justify-between items-center">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <Settings size={20} /> Padrão da Unidade
+                            </h2>
+                            <button onClick={() => setShowSettings(false)} className="hover:bg-white/10 p-1 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Fonte</label>
+                                    <select 
+                                        value={localSettings.fontFamily}
+                                        onChange={(e) => setLocalSettings({...localSettings, fontFamily: e.target.value})}
+                                        className="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-justice-500"
+                                    >
+                                        <option value="Century Gothic">Century Gothic</option>
+                                        <option value="Arial">Arial</option>
+                                        <option value="Times New Roman">Times New Roman</option>
+                                        <option value="Verdana">Verdana</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Tamanho (pt)</label>
+                                    <input 
+                                        type="number"
+                                        value={localSettings.fontSize}
+                                        onChange={(e) => setLocalSettings({...localSettings, fontSize: parseInt(e.target.value)})}
+                                        className="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-justice-500"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Margem Superior (cm)</label>
+                                    <input 
+                                        type="number" step="0.1"
+                                        value={localSettings.marginTop}
+                                        onChange={(e) => setLocalSettings({...localSettings, marginTop: parseFloat(e.target.value)})}
+                                        className="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-justice-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Margem Esquerda (cm)</label>
+                                    <input 
+                                        type="number" step="0.1"
+                                        value={localSettings.marginLeft}
+                                        onChange={(e) => setLocalSettings({...localSettings, marginLeft: parseFloat(e.target.value)})}
+                                        className="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-justice-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Margem Inferior (cm)</label>
+                                    <input 
+                                        type="number" step="0.1"
+                                        value={localSettings.marginBottom}
+                                        onChange={(e) => setLocalSettings({...localSettings, marginBottom: parseFloat(e.target.value)})}
+                                        className="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-justice-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Margem Direita (cm)</label>
+                                    <input 
+                                        type="number" step="0.1"
+                                        value={localSettings.marginRight}
+                                        onChange={(e) => setLocalSettings({...localSettings, marginRight: parseFloat(e.target.value)})}
+                                        className="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-justice-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Recuo de Parágrafo (cm)</label>
+                                <input 
+                                    type="number" step="0.1"
+                                    value={localSettings.indent}
+                                    onChange={(e) => setLocalSettings({...localSettings, indent: parseFloat(e.target.value)})}
+                                    className="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-justice-500"
+                                />
+                            </div>
+
+                            <div className="pt-4 flex gap-3">
+                                <button 
+                                    onClick={() => setShowSettings(false)}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-bold"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        await onUpdateSettings(localSettings);
+                                        setShowSettings(false);
+                                    }}
+                                    className="flex-1 bg-justice-600 text-white px-4 py-2 rounded-lg hover:bg-justice-700 shadow-md transition-colors font-bold flex items-center justify-center gap-2"
+                                >
+                                    <Save size={18} /> Salvar Padrão
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-180px)]">
 
@@ -500,7 +660,7 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                         </h3>
                         <button
                             onClick={handleCopyToClipboard}
-                            className={`text - xs px - 3 py - 1.5 rounded - md font - bold transition - colors flex items - center gap - 1 ${copied ? 'bg-green-100 text-green-700' : 'bg-justice-100 text-justice-700 hover:bg-justice-200'} `}
+                            className={`text-xs px-3 py-1.5 rounded-md font-bold transition-colors flex items-center gap-1 ${copied ? 'bg-green-100 text-green-700' : 'bg-justice-100 text-justice-700 hover:bg-justice-200'} `}
                         >
                             {copied ? <Check size={12} /> : <Copy size={12} />}
                             {copied ? 'Copiado!' : 'Copiar Formatado'}
@@ -510,11 +670,12 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                     <div
                         className="flex-1 overflow-y-auto bg-white custom-scrollbar w-full pl-10"
                         style={{
-                            paddingTop: '10mm',
-                            paddingRight: '10mm',
-                            paddingBottom: '10mm',
-                            fontFamily: '"Century Gothic", CenturyGothic, AppleGothic, sans-serif',
-                            fontSize: '13pt',
+                            paddingTop: `${unitSettings.marginTop}cm`,
+                            paddingLeft: `${unitSettings.marginLeft}cm`,
+                            paddingRight: `${unitSettings.marginRight}cm`,
+                            paddingBottom: `${unitSettings.marginBottom}cm`,
+                            fontFamily: `"${unitSettings.fontFamily}", "Century Gothic", CenturyGothic, AppleGothic, sans-serif`,
+                            fontSize: `${unitSettings.fontSize}pt`,
                             lineHeight: '1.5',
                         }}
                     >
@@ -522,7 +683,7 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                             <div className="text-center text-gray-300 pt-20 flex flex-col items-center">
                                 <Type size={48} className="mb-4 opacity-50" />
                                 <p>Nenhum texto formatado.</p>
-                                <p className="text-sm">Cole o texto ao lado e clique em Atualizar.</p>
+                                <p className="text-sm">Cole o texto ao lado e clique em <b>Atualizar</b>.</p>
                             </div>
                         ) : (
                             blocks.map((block) => {
@@ -537,8 +698,8 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session 
                                         className="mb-4 text-justify relative group"
                                         style={{
                                             marginLeft: block.type === 'quote' ? '4cm' : '0',
-                                            textIndent: block.isCenter || block.type === 'quote' ? '0' : '2cm',
-                                            fontSize: block.type === 'quote' ? '11pt' : '13pt',
+                                            textIndent: block.isCenter || block.type === 'quote' ? '0' : `${unitSettings.indent}cm`,
+                                            fontSize: block.type === 'quote' ? '11pt' : `${unitSettings.fontSize}pt`,
                                             fontWeight: (block.type === 'title' || block.isBold) ? 'bold' : undefined,
                                             textTransform: block.type === 'title' ? 'uppercase' : 'none',
                                             textAlign: block.isCenter ? 'center' : 'justify',
