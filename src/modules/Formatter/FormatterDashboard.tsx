@@ -40,7 +40,7 @@ function toRoman(num: number): string {
     return roman;
 }
 
-function htmlToDocxChildren(html: string, size: number): TextRun[] {
+function htmlToDocxChildren(html: string, size: number, fontFamily: string): TextRun[] {
     const temp = document.createElement('div');
     temp.innerHTML = html;
 
@@ -50,11 +50,11 @@ function htmlToDocxChildren(html: string, size: number): TextRun[] {
         if (node.nodeType === Node.TEXT_NODE) {
             if (node.textContent) {
                 runs.push(new TextRun({
-                    text: node.textContent, // docx package preserves spaces natively well
+                    text: node.textContent,
                     bold: bold,
                     italics: italic,
                     underline: underline ? { type: "single", color: "auto" } : undefined,
-                    font: unitSettings.fontFamily,
+                    font: fontFamily,
                     size: size,
                 }));
             }
@@ -103,62 +103,68 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session,
     const handleProcessText = () => {
         if (!editorRef.current) return;
 
+        // Walk a node and produce a plain string with \n at each block boundary
         const processNode = (node: Node): string => {
             if (node.nodeType === Node.TEXT_NODE) {
                 let text = node.textContent || '';
-
-                // Preserve \n if they exist in text nodes (common when pasting or using Shift+Enter)
-
                 if (autoClean) {
                     text = text.replace(/\s*\[\s*\d{7}-\d{2}[^\]]*\|\s*[a-zA-Z]+\s*\]/g, '');
-                    
-                    // Padronizar referências a Id e Pág
-                    // Formato: (Id. XXX - Pág. XX)
-                    // Remove parênteses se precedido por preposições comuns (de, do, da, no, na, etc.)
-                    text = text.replace(/((\b(?:de|do|da|dos|das|no|na|nos|nas|ao|à|aos|às|pelo|pela|pelos|pelas)\s+)?)(?:\()?Id\.?\s*(\d+)(?:\s*[-–,]\s*P[aá]g\.?\s*(\d+))?(?:\)?)/gi, (match, fullPrep, prep, id, pag) => {
+                    text = text.replace(/((\b(?:de|do|da|dos|das|no|na|nos|nas|ao|à|aos|às|pelo|pela|pelos|pelas)\s+)?)(?:\()?Id\.?\s*(\d+)(?:\s*[-–,]\s*P[aá]g\.?\s*(\d+))?(?:\)?)/gi, (_m, fullPrep, prep, id, pag) => {
                         const formattedId = pag ? `Id. ${id} - Pág. ${pag}` : `Id. ${id}`;
                         return prep ? `${fullPrep}${formattedId}` : `(${formattedId})`;
                     });
                 }
-
                 return text;
             } else if (node.nodeType === Node.ELEMENT_NODE) {
                 const el = node as HTMLElement;
                 const tag = el.tagName.toLowerCase();
 
                 let inner = '';
-                el.childNodes.forEach(c => inner += processNode(c));
+                el.childNodes.forEach(c => { inner += processNode(c); });
 
-                // Inline styles from Word (like <b>, <strong> or inline CSS)
-                let isBold = ['b', 'strong', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'th'].includes(tag) || 
-                             el.style.fontWeight === 'bold' || 
-                             parseInt(el.style.fontWeight || '400') >= 700;
-                let isItalic = ['i', 'em'].includes(tag) || el.style.fontStyle === 'italic';
-                let isUnderline = ['u'].includes(tag) || el.style.textDecoration.includes('underline');
+                const isBold = ['b', 'strong', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'th'].includes(tag) ||
+                    el.style.fontWeight === 'bold' ||
+                    parseInt(el.style.fontWeight || '400') >= 700;
+                const isItalic = ['i', 'em'].includes(tag) || el.style.fontStyle === 'italic';
+                const isUnderline = ['u'].includes(tag) || el.style.textDecoration.includes('underline');
 
                 let result = inner;
                 if (result.trim()) {
-                    // Check if block tags already ended with \n to avoid double breaks
-                    if (isBold) result = result.split('\n').map(line => line.trim() ? `<strong>${line}</strong>` : line).join('\n');
-                    if (isItalic) result = result.split('\n').map(line => line.trim() ? `<em>${line}</em>` : line).join('\n');
-                    if (isUnderline) result = result.split('\n').map(line => line.trim() ? `<u>${line}</u>` : line).join('\n');
+                    if (isBold) result = result.split('\n').map(l => l.trim() ? `<strong>${l}</strong>` : l).join('\n');
+                    if (isItalic) result = result.split('\n').map(l => l.trim() ? `<em>${l}</em>` : l).join('\n');
+                    if (isUnderline) result = result.split('\n').map(l => l.trim() ? `<u>${l}</u>` : l).join('\n');
                 }
 
                 const blockTags = ['p', 'div', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'tr'];
-                if (blockTags.includes(tag)) {
-                    return result + '\n';
-                }
-                if (tag === 'br') {
-                    return result + '\n';
-                }
+                if (blockTags.includes(tag)) return result + '\n';
+                if (tag === 'br') return '\n';
                 return result;
             }
             return '';
         };
 
-        // Ensure single \n are preserved for text processing
-        const rawHtml = processNode(editorRef.current).trim();
-        const lines = rawHtml.split('\n').filter(line => line.trim() !== '');
+        // Chrome's contenteditable puts the FIRST typed line as a bare text node (no <div>),
+        // while all subsequent lines are wrapped in <div>. We must handle each top-level child
+        // individually and insert a \n after inline/text children so the first line doesn't
+        // get concatenated with the second.
+        let rawHtml = '';
+        editorRef.current.childNodes.forEach(child => {
+            const result = processNode(child);
+            rawHtml += result;
+            // If the child is a bare text node OR an inline element (not a block), add separator
+            if (child.nodeType === Node.TEXT_NODE) {
+                rawHtml += '\n';
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+                const tag = (child as HTMLElement).tagName.toLowerCase();
+                const blockTags = ['p', 'div', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'tr'];
+                if (!blockTags.includes(tag) && tag !== 'br') {
+                    rawHtml += '\n';
+                }
+            }
+        });
+
+        // Collapse multiple consecutive \n into one, then split into lines
+        const lines = rawHtml.replace(/\n{2,}/g, '\n').split('\n').filter(line => line.trim() !== '');
 
         setBlocks(prevBlocks => {
             return lines.map((line, index) => {
@@ -319,14 +325,14 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session,
                 outputText = `<strong>${outputText}</strong>`;
             }
 
-            const runs = htmlToDocxChildren(outputText, isQuote ? 22 : 26);
+            const runs = htmlToDocxChildren(outputText, isQuote ? 22 : 26, unitSettings.fontFamily);
 
             if (isTitle) {
                 const prefix = `${toRoman(titleCounter++)} - `;
                 runs.unshift(new TextRun({
                     text: prefix,
-                    font: "Century Gothic",
-                    size: 26,
+                    font: unitSettings.fontFamily,
+                    size: unitSettings.fontSize * 2,
                     bold: true,
                 }));
             }
