@@ -36,6 +36,18 @@ export default function App() {
   // Persistence for App Branding (Sidebar)
   const [appTitle, setAppTitle] = useState(() => localStorage.getItem('app_title') || 'Controle Unidade');
   const [appSubtitle, setAppSubtitle] = useState(() => localStorage.getItem('app_subtitle') || 'Vara Única');
+  const [formatterSettings, setFormatterSettings] = useState(() => {
+    const saved = localStorage.getItem('formatter_settings');
+    return saved ? JSON.parse(saved) : {
+      fontFamily: 'Century Gothic',
+      fontSize: 13,
+      marginTop: 3.0,
+      marginBottom: 2.0,
+      marginLeft: 3.0,
+      marginRight: 2.0,
+      indent: 2.0
+    };
+  });
 
   // Get Role AND Unit
   const { role, unit, unitId, loading: loadingRole } = useUserRole(session);
@@ -58,7 +70,7 @@ export default function App() {
       const fetchSettings = async () => {
         const { data, error } = await supabase
           .from('unit_settings')
-          .select('court_name, app_title, app_subtitle')
+          .select('court_name, app_title, app_subtitle, formatter_font, formatter_font_size, formatter_margin_top, formatter_margin_bottom, formatter_margin_left, formatter_margin_right, formatter_indent')
           .eq('unit', unit)
           .single();
 
@@ -74,6 +86,19 @@ export default function App() {
           if (data.app_subtitle) {
             setAppSubtitle(data.app_subtitle);
             localStorage.setItem('app_subtitle', data.app_subtitle);
+          }
+          if (data.formatter_font) {
+            const settings = {
+              fontFamily: data.formatter_font || 'Century Gothic',
+              fontSize: data.formatter_font_size || 13,
+              marginTop: data.formatter_margin_top || 3.0,
+              marginBottom: data.formatter_margin_bottom || 2.0,
+              marginLeft: data.formatter_margin_left || 3.0,
+              marginRight: data.formatter_margin_right || 2.0,
+              indent: data.formatter_indent || 2.0
+            };
+            setFormatterSettings(settings);
+            localStorage.setItem('formatter_settings', JSON.stringify(settings));
           }
         }
       };
@@ -131,6 +156,31 @@ export default function App() {
           }, { onConflict: 'unit' });
         }
       }
+    }
+  };
+
+  const handleUpdateFormatterSettings = async (newSettings: any) => {
+    if (role !== 'admin') {
+      alert("Apenas administradores podem atualizar o padrão oficial da Unidade.");
+      return;
+    }
+
+    setFormatterSettings(newSettings);
+    localStorage.setItem('formatter_settings', JSON.stringify(newSettings));
+
+    if (unit) {
+      await supabase.from('unit_settings').upsert({
+        unit,
+        unit_id: unitId,
+        formatter_font: newSettings.fontFamily,
+        formatter_font_size: newSettings.fontSize,
+        formatter_margin_top: newSettings.marginTop,
+        formatter_margin_bottom: newSettings.marginBottom,
+        formatter_margin_left: newSettings.marginLeft,
+        formatter_margin_right: newSettings.marginRight,
+        formatter_indent: newSettings.indent,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'unit' });
     }
   };
 
@@ -192,7 +242,12 @@ export default function App() {
       case 'productivity':
         return <ProductivityDashboard session={session} />;
       case 'formatter':
-        return <FormatterDashboard session={session} />;
+        return <FormatterDashboard 
+          session={session} 
+          unitSettings={formatterSettings} 
+          onUpdateSettings={handleUpdateFormatterSettings}
+          isAdmin={role === 'admin'}
+        />;
       default:
         return <CriminalDashboard session={session} courtName={courtName} />;
     }
