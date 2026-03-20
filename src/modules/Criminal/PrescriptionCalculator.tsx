@@ -56,8 +56,10 @@ const formatDateBr = (d: string) => {
 const addYearsToDate = (d: string, years: number) => {
     const date = safeDate(d);
     if (!date) return '';
-    date.setFullYear(date.getFullYear() + years);
-    return date.toISOString().split('T')[0];
+    // Use milliseconds to correctly handle fractional years (setFullYear truncates decimals)
+    const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000;
+    const newTime = date.getTime() + years * MS_PER_YEAR;
+    return new Date(newTime).toISOString().split('T')[0];
 };
 
 export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) => {
