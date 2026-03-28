@@ -98,7 +98,6 @@ export const DosimetryCalculator: React.FC = () => {
     if (penaIntDias < minDias) { penaIntDias = minDias; hasSumula231PPL = true; }
     if (penaIntDias > maxDias) { penaIntDias = maxDias; hasSumula231PPL = true; }
     
-    // Applying same logic for fine, usually limits apply although not as rigidly debated as PPL in STJ.
     if (multaInt < minMulta) multaInt = minMulta;
     if (multaInt > maxMulta) multaInt = maxMulta;
 
@@ -129,7 +128,6 @@ export const DosimetryCalculator: React.FC = () => {
         } else if (detracaoModo === 'datas' && dataPrisao) {
             const d1 = new Date(dataPrisao);
             const d2 = dataSoltura ? new Date(dataSoltura) : new Date();
-            // Calcula diff e corrige timestamp da timezone para dia puro
             const diffTime = Math.abs(d2.getTime() - d1.getTime());
             detracaoDias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         }
@@ -143,7 +141,7 @@ export const DosimetryCalculator: React.FC = () => {
     const detracaoResult = daysToTime(detracaoDias);
     const restanteResult = daysToTime(penaRestanteDias);
 
-    // Sugestão de Regime (baseado na pena restante conforme art. 387, § 2º, CPP)
+    // Sugestão de Regime Inicial
     const finalYearsFloat = penaRestanteDias / 360;
     let suggRegime = '';
     if (finalYearsFloat > 8) suggRegime = 'Fechado';
@@ -155,33 +153,26 @@ export const DosimetryCalculator: React.FC = () => {
     const analiseBeneficios = useMemo(() => {
         let result = { cabePRD: false, prdMsg: '', cabeSursis: false, sursisMsg: '' };
 
-        // Art. 44 (Substituição PRD) incide sobre a condenação imposta (definitiva não detraída)
-        // Requisitos: Pena <= 4 anos (1440 dias), sem violência ou culposo (qualquer pena), réu não reincidente doloso.
         if ((isCulposo || penaDefDias <= 1440) && (!hasViolencia || isCulposo) && !isReincidente && penaDefDias > 0) {
             result.cabePRD = true;
             if (penaDefDias <= 360) {
                 if (isViolenciaDomestica) {
-                    result.prdMsg = 'Substituição por 1 (UMA) restritiva de direitos.\n*ATENÇÃO:* A Lei Maria da Penha (Art. 17) VEDA o pagamento isolado de multa ou prestação pecuniária. Sugere-se Prestação de Serviços à Comunidade (limitado a tarefas proporcionais) ou Limitação de fim de semana.';
+                    result.prdMsg = 'Substituição por 1 (UMA) restritiva de direitos.\n*Lei Maria da Penha:* Veda pecuniária.';
                 } else {
-                    result.prdMsg = 'Substituição por 1 (UMA) restritiva de direitos (ex: Prestação Pecuniária) OU 1 (UMA) Multa.';
+                    result.prdMsg = 'Substituição por 1 (UMA) restritiva ou Multa.';
                 }
             } else {
                 if (isViolenciaDomestica) {
-                    result.prdMsg = `Substituição por 2 (DUAS) restritivas de direitos, sendo o sugerido:\n1) Prestação de Serviços à Comunidade (${penaDefDias} horas - Art. 46, §3º);\n2) Limitação de Fim de Semana.\n*ATENÇÃO:* Excluída a Prestação Pecuniária por vedação expressa no art. 17 da Lei 11.340/06.`;
+                    result.prdMsg = `2 (DUAS) restritivas: PSC (${penaDefDias}h) e Limitação FS.`;
                 } else {
-                    result.prdMsg = `Substituição por 2 (DUAS) restritivas de direitos, sendo o mais usual:\n1) Prestação de Serviços à Comunidade (${penaDefDias} horas, executadas em no mín. 1 hora/dia - Art. 46, §3º);\n2) Prestação Pecuniária.\n*(Ou 1 PRD + 1 Multa)*`;
+                    result.prdMsg = `2 (DUAS) restritivas: PSC (${penaDefDias}h) e Pecuniária/Multa.`;
                 }
             }
         }
 
-        // Art. 77 (Sursis). Aplicável se pena <= 2 anos (720 dias) e somente se NÃO couber PRD (Art. 77, III).
         if (!result.cabePRD && penaDefDias <= 720 && !isReincidente && penaDefDias > 0) {
             result.cabeSursis = true;
-            if (isViolenciaDomestica) {
-                result.sursisMsg = 'Restritiva inviabilizada pela Súmula 588 STJ/Violência. Suspensão Condicional da Pena (Sursis) MANTIDA. Prazo de 2 a 4 anos (Art. 77 CP), devendo fixar a Prestação de Serviços ou Limitação de Fim de Semana no primeiro ano (*VEDADA prestação pecuniária - Art. 17 Maria da Penha*).';
-            } else {
-                result.sursisMsg = 'Restritiva inviabilizada (ex: houve violência), porém cabe Suspensão Condicional da Pena (Sursis). Prazo de 2 a 4 anos (Art. 77 CP), mediante prestação de serviços ou fixação equivalente no primeiro ano (Sursis Simples - Art. 78, §1º).';
-            }
+            result.sursisMsg = 'Cabe Suspensão Condicional da Pena (Sursis). Prazo de 2 a 4 anos.';
         }
 
         return result;
@@ -199,359 +190,290 @@ export const DosimetryCalculator: React.FC = () => {
     };
 
     return (
-        <div className="p-4 md:p-6 fade-in h-full overflow-y-auto w-full max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center gap-3 mb-4">
-                <div className="bg-blue-100 p-2 rounded-lg"><Scale className="text-blue-600 size-6" /></div>
+        <div className="p-2 md:p-4 fade-in h-full overflow-y-auto w-full max-w-7xl mx-auto space-y-4">
+            <div className="flex items-center gap-2 mb-1">
+                <div className="bg-blue-100 p-1.5 rounded-lg text-blue-600 shadow-sm"><Scale size={18} /></div>
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800">Calculadora de Dosimetria Penal</h2>
-                    <p className="text-sm text-gray-500">Ferramenta para cálculo da pena privativa de liberdade e dias-multa com base no sistema trifásico (Art. 68 CP).</p>
+                    <h2 className="text-lg font-bold text-gray-800">Calculadora de Dosimetria Penal</h2>
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Sistema Trifásico • Art. 68 CP</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 
-                {/* LADO DE CONTROLES (7 COLUNAS) */}
-                <div className="lg:col-span-8 flex flex-col gap-6">
+                {/* LADO DE CONTROLES (8 COLUNAS) */}
+                <div className="lg:col-span-8 flex flex-col gap-4">
                     
-                    {/* PARÂMETROS LEGAIS */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <Info size={18} className="text-blue-500" /> Pena em Abstrato do Tipo Penal
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Pena Privativa Mínima</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <input type="number" min="0" placeholder="Anos" className="p-2 border rounded-md w-full text-center" value={minPena.years || ''} onChange={e => setMinPena({...minPena, years: parseNumber(e.target.value)})} title="Anos" />
-                                    <input type="number" min="0" placeholder="Meses" className="p-2 border rounded-md w-full text-center" value={minPena.months || ''} onChange={e => setMinPena({...minPena, months: parseNumber(e.target.value)})} title="Meses" />
-                                    <input type="number" min="0" placeholder="Dias" className="p-2 border rounded-md w-full text-center" value={minPena.days || ''} onChange={e => setMinPena({...minPena, days: parseNumber(e.target.value)})} title="Dias" />
+                    {/* ETAPA 0: CONFIGURAÇÕES INICIAIS (ABSTRATO + PERFIL) */}
+                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+                            
+                            {/* PARÂMETROS LEGAIS */}
+                            <div className="md:pr-4">
+                                <h3 className="text-xs font-bold text-gray-800 mb-2 flex items-center gap-2 uppercase tracking-wide">
+                                    <Info size={14} className="text-blue-500" /> Pena em Abstrato
+                                </h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Mínima (A/M/D)</label>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            <input type="number" min="0" placeholder="A" className="p-1 px-2 border rounded text-xs text-center focus:ring-1 focus:ring-blue-500 outline-none" value={minPena.years || ''} onChange={e => setMinPena({...minPena, years: parseNumber(e.target.value)})} />
+                                            <input type="number" min="0" placeholder="M" className="p-1 px-2 border rounded text-xs text-center focus:ring-1 focus:ring-blue-500 outline-none" value={minPena.months || ''} onChange={e => setMinPena({...minPena, months: parseNumber(e.target.value)})} />
+                                            <input type="number" min="0" placeholder="D" className="p-1 px-2 border rounded text-xs text-center focus:ring-1 focus:ring-blue-500 outline-none" value={minPena.days || ''} onChange={e => setMinPena({...minPena, days: parseNumber(e.target.value)})} />
+                                        </div>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Máxima (A/M/D)</label>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            <input type="number" min="0" placeholder="A" className="p-1 px-2 border rounded text-xs text-center focus:ring-1 focus:ring-blue-500 outline-none" value={maxPena.years || ''} onChange={e => setMaxPena({...maxPena, years: parseNumber(e.target.value)})} />
+                                            <input type="number" min="0" placeholder="M" className="p-1 px-2 border rounded text-xs text-center focus:ring-1 focus:ring-blue-500 outline-none" value={maxPena.months || ''} onChange={e => setMaxPena({...maxPena, months: parseNumber(e.target.value)})} />
+                                            <input type="number" min="0" placeholder="D" className="p-1 px-2 border rounded text-xs text-center focus:ring-1 focus:ring-blue-500 outline-none" value={maxPena.days || ''} onChange={e => setMaxPena({...maxPena, days: parseNumber(e.target.value)})} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Dias-Multa Mín</label>
+                                        <input type="number" min="0" className="p-1 px-2 border rounded text-xs w-full focus:ring-1 focus:ring-blue-500 outline-none" value={minMulta || ''} onChange={e => setMinMulta(parseNumber(e.target.value))} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">Dias-Multa Máx</label>
+                                        <input type="number" min="0" className="p-1 px-2 border rounded text-xs w-full focus:ring-1 focus:ring-blue-500 outline-none" value={maxMulta || ''} onChange={e => setMaxMulta(parseNumber(e.target.value))} />
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Pena Privativa Máxima</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <input type="number" min="0" placeholder="Anos" className="p-2 border rounded-md w-full text-center" value={maxPena.years || ''} onChange={e => setMaxPena({...maxPena, years: parseNumber(e.target.value)})} />
-                                    <input type="number" min="0" placeholder="Meses" className="p-2 border rounded-md w-full text-center" value={maxPena.months || ''} onChange={e => setMaxPena({...maxPena, months: parseNumber(e.target.value)})} />
-                                    <input type="number" min="0" placeholder="Dias" className="p-2 border rounded-md w-full text-center" value={maxPena.days || ''} onChange={e => setMaxPena({...maxPena, days: parseNumber(e.target.value)})} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Dias-Multa Mínima</label>
-                                <input type="number" min="0" className="p-2 border rounded-md w-full" value={minMulta || ''} onChange={e => setMinMulta(parseNumber(e.target.value))} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Dias-Multa Máxima</label>
-                                <input type="number" min="0" className="p-2 border rounded-md w-full" value={maxMulta || ''} onChange={e => setMaxMulta(parseNumber(e.target.value))} />
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* PERFIL DO CRIME (BENEFÍCIOS) */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <Info size={18} className="text-blue-500" /> Perfil Inicial da Denúncia (P/ Sursis e PRD)
-                        </h3>
-                        <div className="flex flex-col md:flex-row gap-6 mb-4">
-                            <label className="flex items-center gap-2 cursor-pointer bg-gray-50 p-2 rounded border hover:bg-gray-100 flex-1">
-                                <input type="checkbox" className="accent-blue-600 size-4" checked={isCulposo} 
-                                    onChange={e => setIsCulposo(e.target.checked)} />
-                                <span className="text-sm font-semibold text-gray-700">Crime Culposo?</span>
-                            </label>
-                            
-                            <label className={`flex items-center gap-2 cursor-pointer p-2 rounded border flex-1 ${isCulposo ? 'bg-gray-200 opacity-50 cursor-not-allowed' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                                <input type="checkbox" className="accent-red-600 size-4" checked={hasViolencia} disabled={isCulposo}
-                                    onChange={e => setHasViolencia(e.target.checked)} />
-                                <span className="text-sm font-semibold text-gray-700">Violência ou Grave Ameaça?</span>
-                            </label>
-                            
-                            <label className="flex items-center gap-2 cursor-pointer bg-gray-50 p-2 rounded border hover:bg-gray-100 flex-1">
-                                <input type="checkbox" className="accent-orange-600 size-4" checked={isReincidente} 
-                                    onChange={e => setIsReincidente(e.target.checked)} />
-                                <span className="text-sm font-semibold text-gray-700">Reincidente em Crime Doloso?</span>
-                            </label>
-                        </div>
-                        <div className="flex flex-col md:flex-row gap-6">
-                            <label className="flex items-center gap-2 cursor-pointer bg-pink-50 p-2 rounded border border-pink-200 hover:bg-pink-100 flex-1">
-                                <input type="checkbox" className="accent-pink-600 size-4" checked={isViolenciaDomestica} 
-                                    onChange={e => setIsViolenciaDomestica(e.target.checked)} />
-                                <span className="text-sm font-semibold text-pink-900">Violência Doméstica / Maria da Penha?</span>
-                            </label>
-                            <div className="flex-1"></div>
-                            <div className="flex-1"></div>
+                            {/* PERFIL DO CRIME */}
+                            <div className="md:pl-4 pt-2 md:pt-0">
+                                <h3 className="text-xs font-bold text-gray-800 mb-2 flex items-center gap-2 uppercase tracking-wide">
+                                    <Info size={14} className="text-blue-500" /> Perfil Inicial
+                                </h3>
+                                <div className="grid grid-cols-1 gap-1.5">
+                                    <label className="flex items-center gap-2 cursor-pointer bg-gray-50 px-2 py-1.5 rounded border border-gray-100 hover:bg-gray-100 transition-colors">
+                                        <input type="checkbox" className="accent-blue-600 size-3" checked={isCulposo} onChange={e => setIsCulposo(e.target.checked)} />
+                                        <span className="text-[11px] font-semibold text-gray-700">Crime Culposo</span>
+                                    </label>
+                                    <label className={`flex items-center gap-2 cursor-pointer px-2 py-1.5 rounded border transition-colors ${isCulposo ? 'bg-gray-200 border-gray-200 opacity-50' : 'bg-gray-50 border-gray-100 hover:bg-gray-100'}`}>
+                                        <input type="checkbox" className="accent-red-600 size-3" checked={hasViolencia} disabled={isCulposo} onChange={e => setHasViolencia(e.target.checked)} />
+                                        <span className="text-[11px] font-semibold text-gray-700">Violência ou Grave Ameaça</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer bg-gray-50 px-2 py-1.5 rounded border border-gray-100 hover:bg-gray-100 transition-colors">
+                                        <input type="checkbox" className="accent-orange-600 size-3" checked={isReincidente} onChange={e => setIsReincidente(e.target.checked)} />
+                                        <span className="text-[11px] font-semibold text-gray-700">Reincidente em Crime Doloso</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer bg-pink-50 px-2 py-1.5 rounded border border-pink-100 hover:bg-pink-100 transition-colors">
+                                        <input type="checkbox" className="accent-pink-600 size-3" checked={isViolenciaDomestica} onChange={e => setIsViolenciaDomestica(e.target.checked)} />
+                                        <span className="text-[11px] font-semibold text-pink-900">Violência Doméstica / Maria da Penha</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     {/* FASE 1 - PENA BASE */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-blue-500">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-gray-800">1ª Fase - Circunstâncias Judiciais (Art. 59 CP)</h3>
-                            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">
-                                {numeroNegativas} Negativas
+                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-blue-500">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="text-xs font-bold text-gray-800 uppercase tracking-tight">1ª Fase - Circunstâncias Judiciais (Art. 59)</h3>
+                            <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm">
+                                {numeroNegativas}/8 NEGATIVAS
                             </span>
                         </div>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Assinale as circunstâncias consideradas desfavoráveis. Cada uma aumenta o equivalente a 1/8 do intervalo da pena abstrata
-                            {maxDias > minDias && (
-                                <span className="font-semibold text-indigo-600 ml-1">
-                                    {(maxDias - minDias) / 8 > 0 ? 
-                                        `(+ ${formatTime(daysToTime((maxDias - minDias) / 8).years, daysToTime((maxDias - minDias) / 8).months, daysToTime((maxDias - minDias) / 8).days)} por desfavorável)` 
-                                        : ''}
-                                </span>
-                            )}.
-                        </p>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                             {judiciaisList.map(circ => (
-                                <label key={circ} className={`flex items-start gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${circunstancias[circ] ? 'bg-red-50 border-red-300' : 'hover:bg-gray-50'}`}>
-                                    <input type="checkbox" className="mt-1 accent-red-600" checked={circunstancias[circ]} 
+                                <label key={circ} className={`flex items-center gap-2 p-1.5 border rounded-lg cursor-pointer transition-all ${circunstancias[circ] ? 'bg-red-50 border-red-200 shadow-sm ring-1 ring-red-100' : 'hover:bg-gray-50 border-gray-100'}`}>
+                                    <input type="checkbox" className="accent-red-600 size-3" checked={circunstancias[circ]} 
                                         onChange={() => setCircunstancias({...circunstancias, [circ]: !circunstancias[circ]})} />
-                                    <span className={`text-sm ${circunstancias[circ] ? 'text-red-700 font-semibold' : 'text-gray-700'}`}>{circ}</span>
+                                    <span className={`text-[10px] leading-tight ${circunstancias[circ] ? 'text-red-700 font-bold' : 'text-gray-600'}`}>{circ}</span>
                                 </label>
                             ))}
                         </div>
                     </div>
 
-                    {/* FASE 2 - AGRAVANTES E ATENUANTES */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-orange-500">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-gray-800">2ª Fase - Agravantes e Atenuantes</h3>
-                        </div>
-                        <p className="text-sm text-gray-500 mb-4">A jurisprudência estabelece a fração ideal de 1/6 da pena base para cada circunstância atenuante ou agravante.</p>
-                        
-                        <div className="flex gap-8">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Adicionar Agravantes (+)</label>
-                                <div className="flex bg-gray-100 rounded-lg overflow-hidden border">
-                                    <button onClick={() => setAgravantes(Math.max(0, agravantes - 1))} className="p-2 hover:bg-gray-200"><Minus size={16}/></button>
-                                    <input type="number" readOnly className="w-16 bg-transparent text-center font-bold outline-none" value={agravantes} />
-                                    <button onClick={() => setAgravantes(agravantes + 1)} className="p-2 hover:bg-gray-200"><Plus size={16}/></button>
+                    {/* FASE 2 & 3 - TIGHT GRID */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* FASE 2 */}
+                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-orange-500">
+                            <h3 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-tight">2ª Fase - Agravantes e Atenuantes</h3>
+                            <div className="flex justify-between items-center bg-gray-50 p-2 px-3 rounded-lg border border-gray-100">
+                                <div className="flex-1 text-center">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Agravantes (+)</p>
+                                    <div className="flex items-center justify-center gap-3">
+                                        <button onClick={() => setAgravantes(Math.max(0, agravantes - 1))} className="text-gray-400 hover:text-red-500 transition-colors"><Minus size={14}/></button>
+                                        <span className="font-bold text-lg w-6 text-gray-700">{agravantes}</span>
+                                        <button onClick={() => setAgravantes(agravantes + 1)} className="text-gray-400 hover:text-green-500 transition-colors"><Plus size={14}/></button>
+                                    </div>
+                                </div>
+                                <div className="w-px h-8 bg-gray-200 mx-4" />
+                                <div className="flex-1 text-center">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Atenuantes (-)</p>
+                                    <div className="flex items-center justify-center gap-3">
+                                        <button onClick={() => setAtenuantes(Math.max(0, atenuantes - 1))} className="text-gray-400 hover:text-red-500 transition-colors"><Minus size={14}/></button>
+                                        <span className="font-bold text-lg w-6 text-gray-700">{atenuantes}</span>
+                                        <button onClick={() => setAtenuantes(atenuantes + 1)} className="text-gray-400 hover:text-green-500 transition-colors"><Plus size={14}/></button>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Adicionar Atenuantes (-)</label>
-                                <div className="flex bg-gray-100 rounded-lg overflow-hidden border">
-                                    <button onClick={() => setAtenuantes(Math.max(0, atenuantes - 1))} className="p-2 hover:bg-gray-200"><Minus size={16}/></button>
-                                    <input type="number" readOnly className="w-16 bg-transparent text-center font-bold outline-none" value={atenuantes} />
-                                    <button onClick={() => setAtenuantes(atenuantes + 1)} className="p-2 hover:bg-gray-200"><Plus size={16}/></button>
+                            {hasSumula231PPL && (
+                                <div className="mt-2 text-[9px] text-orange-700 bg-orange-50 p-1.5 rounded border border-orange-100 font-medium italic flex items-center gap-1">
+                                    <AlertTriangle size={10} /> Súmula 231 STJ aplicada (limites legais).
                                 </div>
-                            </div>
+                            )}
                         </div>
-                        {hasSumula231PPL && (
-                            <div className="mt-4 flex items-start gap-2 p-3 bg-yellow-50 text-yellow-800 rounded-lg text-sm border border-yellow-200">
-                                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                                <p><strong>Súmula 231 STJ:</strong> A pena provisória foi ajustada aos limites legais abstratos (não pode ficar aquém do mínimo nem além do máximo).</p>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* FASE 3 - CAUSAS DE AUMENTO E DIMINUIÇÃO */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-green-500">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-gray-800">3ª Fase - Causas de Aumento e Diminuição</h3>
-                        </div>
-                        <p className="text-sm text-gray-500 mb-4">As frações incidem progressivamente em cascata sobre o resultado da 2ª Fase.</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* AUMENTOS */}
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-sm font-semibold text-gray-700">Causas de Aumento (+)</label>
-                                    <Button variant="outline" size="sm" onClick={() => handleAddFracao('aumento')}><Plus size={14}/> Add</Button>
-                                </div>
-                                <div className="space-y-2">
-                                    {aumentos.length === 0 && <div className="text-xs text-gray-400 italic">Nenhum aumento adicionado</div>}
-                                    {aumentos.map((f, i) => (
-                                        <div key={f.id} className="flex items-center gap-2 p-2 bg-gray-50 border rounded-md">
-                                            <span className="text-xs font-bold text-gray-500 w-4">#{i+1}</span>
-                                            <input type="number" min="1" className="w-12 p-1 border rounded text-center" value={f.num} onChange={e => {
-                                                const newAumentos = [...aumentos]; newAumentos[i].num = parseNumber(e.target.value); setAumentos(newAumentos);
-                                            }} />
-                                            <span className="text-gray-500">/</span>
-                                            <input type="number" min="1" className="w-12 p-1 border rounded text-center" value={f.den} onChange={e => {
-                                                const newAumentos = [...aumentos]; newAumentos[i].den = Math.max(1, parseNumber(e.target.value)); setAumentos(newAumentos);
-                                            }} />
-                                            <button onClick={() => setAumentos(aumentos.filter(a => a.id !== f.id))} className="ml-auto p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
-                                        </div>
-                                    ))}
-                                </div>
+                        {/* FASE 3 */}
+                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-green-500">
+                            <h3 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-tight">3ª Fase - Causas de Aum/Dim</h3>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" className="h-7 text-[10px] flex-1 bg-gray-50 border-gray-200 hover:bg-green-50" onClick={() => handleAddFracao('aumento')}><Plus size={12} className="mr-1 text-green-600"/> Aumento</Button>
+                                <Button variant="outline" size="sm" className="h-7 text-[10px] flex-1 bg-gray-50 border-gray-200 hover:bg-red-50" onClick={() => handleAddFracao('diminuicao')}><Minus size={12} className="mr-1 text-red-600"/> Diminuição</Button>
                             </div>
-
-                            {/* DIMINUIÇÕES */}
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-sm font-semibold text-gray-700">Causas de Diminuição (-)</label>
-                                    <Button variant="outline" size="sm" onClick={() => handleAddFracao('diminuicao')}><Plus size={14}/> Add</Button>
-                                </div>
-                                <div className="space-y-2">
-                                    {diminuicoes.length === 0 && <div className="text-xs text-gray-400 italic">Nenhuma diminuição adicionada</div>}
-                                    {diminuicoes.map((f, i) => (
-                                        <div key={f.id} className="flex items-center gap-2 p-2 bg-gray-50 border rounded-md">
-                                            <span className="text-xs font-bold text-gray-500 w-4">#{i+1}</span>
-                                            <input type="number" min="1" className="w-12 p-1 border rounded text-center" value={f.num} onChange={e => {
-                                                const newAum = [...diminuicoes]; newAum[i].num = parseNumber(e.target.value); setDiminuicoes(newAum);
+                            <div className="mt-2 space-y-1.5 max-h-[85px] overflow-y-auto pr-1 thin-scrollbar">
+                                {[...aumentos, ...diminuicoes].length === 0 && (
+                                    <div className="text-[10px] text-gray-300 italic text-center py-2">Nenhuma causa adicionada</div>
+                                )}
+                                {[...aumentos, ...diminuicoes].map((f, i) => {
+                                    const isAum = aumentos.includes(f);
+                                    return (
+                                        <div key={f.id} className={`flex items-center gap-2 p-1 px-2 border rounded-md text-[11px] ${isAum ? 'bg-blue-50/50 border-blue-100' : 'bg-emerald-50/50 border-emerald-100'}`}>
+                                            <span className={`font-bold text-xs ${isAum ? 'text-blue-600' : 'text-emerald-600'}`}>{isAum ? '+' : '-'}</span>
+                                            <input type="number" className="w-9 p-0.5 border rounded text-center bg-white focus:ring-1 focus:ring-blue-300 outline-none" value={f.num || 1} onChange={e => {
+                                                const list = isAum ? [...aumentos] : [...diminuicoes];
+                                                const idx = list.findIndex(item => item.id === f.id);
+                                                list[idx].num = parseNumber(e.target.value);
+                                                isAum ? setAumentos(list) : setDiminuicoes(list);
                                             }} />
-                                            <span className="text-gray-500">/</span>
-                                            <input type="number" min="1" className="w-12 p-1 border rounded text-center" value={f.den} onChange={e => {
-                                                const newAum = [...diminuicoes]; newAum[i].den = Math.max(1, parseNumber(e.target.value)); setDiminuicoes(newAum);
+                                            <span className="text-gray-400">/</span>
+                                            <input type="number" className="w-9 p-0.5 border rounded text-center bg-white focus:ring-1 focus:ring-blue-300 outline-none" value={f.den || 1} onChange={e => {
+                                                const list = isAum ? [...aumentos] : [...diminuicoes];
+                                                const idx = list.findIndex(item => item.id === f.id);
+                                                list[idx].den = Math.max(1, parseNumber(e.target.value));
+                                                isAum ? setAumentos(list) : setDiminuicoes(list);
                                             }} />
-                                            <button onClick={() => setDiminuicoes(diminuicoes.filter(a => a.id !== f.id))} className="ml-auto p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={14}/></button>
+                                            <button onClick={() => isAum ? setAumentos(aumentos.filter(a => a.id !== f.id)) : setDiminuicoes(diminuicoes.filter(a => a.id !== f.id))} className="ml-auto text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={12}/></button>
                                         </div>
-                                    ))}
-                                </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
 
-                    {/* DETRAÇÃO PARA REGIME (ART. 387, §2º, CPP) */}
-                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-purple-500">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-gray-800">4ª Etapa (Fixação de Regime) - Detração</h3>
+                    {/* DETRAÇÃO COMPACTA */}
+                    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-purple-500">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-xs font-bold text-gray-800 uppercase tracking-tight">Detração Civil (Para fixação de regime)</h3>
+                            <input type="checkbox" className="accent-purple-600 size-3.5 cursor-pointer" checked={temDetracao} onChange={e => setTemDetracao(e.target.checked)} />
                         </div>
-                        <p className="text-sm text-gray-500 mb-4">
-                            O Art. 387, § 2º, do CPP prevê o abatimento do tempo de prisão provisória para fins de fixação do regime inicial de cumprimento da pena.
-                        </p>
-                        
-                        <label className="flex items-center gap-2 cursor-pointer mb-4">
-                            <input type="checkbox" className="accent-purple-600 size-4" checked={temDetracao} onChange={e => setTemDetracao(e.target.checked)} />
-                            <span className="text-sm font-semibold text-gray-700">O réu esteve preso cautelarmente no curso do processo?</span>
-                        </label>
-
                         {temDetracao && (
-                            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                                <div className="flex gap-4 mb-4 border-b border-purple-200 pb-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="detracaoModo" className="accent-purple-600" checked={detracaoModo === 'datas'} onChange={() => setDetracaoModo('datas')} />
-                                        <span className="text-sm font-semibold text-purple-900">Calcular por Datas</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="detracaoModo" className="accent-purple-600" checked={detracaoModo === 'manual'} onChange={() => setDetracaoModo('manual')} />
-                                        <span className="text-sm font-semibold text-purple-900">Período Manual (A/M/D)</span>
-                                    </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end animate-in fade-in slide-in-from-top-1 duration-200">
+                                <div className="flex gap-1 bg-gray-50 p-1 rounded-lg border border-gray-100">
+                                    <button className={`flex-1 text-[10px] py-1 rounded-md transition-all ${detracaoModo === 'datas' ? 'bg-white shadow-sm font-bold text-purple-700 ring-1 ring-gray-100' : 'text-gray-500 hover:bg-gray-100'}`} onClick={() => setDetracaoModo('datas')}>Datas</button>
+                                    <button className={`flex-1 text-[10px] py-1 rounded-md transition-all ${detracaoModo === 'manual' ? 'bg-white shadow-sm font-bold text-purple-700 ring-1 ring-gray-100' : 'text-gray-500 hover:bg-gray-100'}`} onClick={() => setDetracaoModo('manual')}>Período</button>
                                 </div>
-
                                 {detracaoModo === 'datas' ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-purple-800 mb-2">Data da Prisão</label>
-                                            <input type="date" className="p-2 border rounded-md w-full bg-white" value={dataPrisao} onChange={e => setDataPrisao(e.target.value)} />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="flex flex-col gap-0.5">
+                                            <label className="text-[9px] font-bold text-gray-400 ml-1 uppercase">Entrada</label>
+                                            <input type="date" className="p-1 px-2 border rounded text-xs bg-white focus:ring-1 focus:ring-purple-400 outline-none" value={dataPrisao} onChange={e => setDataPrisao(e.target.value)} title="Data da Prisão" />
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-purple-800 mb-2">Data da Soltura <span className="text-xs font-normal">(Deixe em branco p/ Hoje)</span></label>
-                                            <input type="date" className="p-2 border rounded-md w-full bg-white" value={dataSoltura} onChange={e => setDataSoltura(e.target.value)} />
+                                        <div className="flex flex-col gap-0.5">
+                                            <label className="text-[9px] font-bold text-gray-400 ml-1 uppercase">Soltura</label>
+                                            <input type="date" className="p-1 px-2 border rounded text-xs bg-white focus:ring-1 focus:ring-purple-400 outline-none" value={dataSoltura} onChange={e => setDataSoltura(e.target.value)} title="Data da Soltura" />
                                         </div>
                                     </div>
                                 ) : (
-                                    <>
-                                        <label className="block text-sm font-semibold text-purple-800 mb-2">Tempo a ser detraído:</label>
-                                        <div className="grid grid-cols-3 gap-2 max-w-sm">
-                                            <input type="number" min="0" placeholder="Anos" className="p-2 border rounded-md text-center bg-white" value={detracaoTempo.years || ''} onChange={e => setDetracaoTempo({...detracaoTempo, years: parseNumber(e.target.value)})} title="Anos" />
-                                            <input type="number" min="0" placeholder="Meses" className="p-2 border rounded-md text-center bg-white" value={detracaoTempo.months || ''} onChange={e => setDetracaoTempo({...detracaoTempo, months: parseNumber(e.target.value)})} title="Meses" />
-                                            <input type="number" min="0" placeholder="Dias" className="p-2 border rounded-md text-center bg-white" value={detracaoTempo.days || ''} onChange={e => setDetracaoTempo({...detracaoTempo, days: parseNumber(e.target.value)})} title="Dias" />
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                        <div className="flex flex-col gap-0.5">
+                                            <label className="text-[9px] font-bold text-gray-400 text-center uppercase">Anos</label>
+                                            <input type="number" className="p-1 border rounded text-xs text-center bg-white focus:ring-1 focus:ring-purple-400 outline-none" value={detracaoTempo.years || ''} onChange={e => setDetracaoTempo({...detracaoTempo, years: parseNumber(e.target.value)})} />
                                         </div>
-                                    </>
+                                        <div className="flex flex-col gap-0.5">
+                                            <label className="text-[9px] font-bold text-gray-400 text-center uppercase">Meses</label>
+                                            <input type="number" className="p-1 border rounded text-xs text-center bg-white focus:ring-1 focus:ring-purple-400 outline-none" value={detracaoTempo.months || ''} onChange={e => setDetracaoTempo({...detracaoTempo, months: parseNumber(e.target.value)})} />
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                            <label className="text-[9px] font-bold text-gray-400 text-center uppercase">Dias</label>
+                                            <input type="number" className="p-1 border rounded text-xs text-center bg-white focus:ring-1 focus:ring-purple-400 outline-none" value={detracaoTempo.days || ''} onChange={e => setDetracaoTempo({...detracaoTempo, days: parseNumber(e.target.value)})} />
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         )}
                     </div>
-
                 </div>
 
-                {/* PAINEL DE RESULTADOS (5 COLUNAS) */}
+                {/* PAINEL DE RESULTADOS (STICKY) */}
                 <div className="lg:col-span-4">
-                    <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden sticky top-6">
-                        <div className="p-4 bg-slate-800 border-b border-slate-700">
-                            <h3 className="text-white font-bold flex items-center gap-2">
-                                <Calculator className="text-blue-400" size={18} />
-                                Resumo da Pena
+                    <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-xl overflow-hidden sticky top-4 ring-1 ring-slate-800">
+                        <div className="p-3.5 bg-slate-800/80 border-b border-slate-700 backdrop-blur-sm">
+                            <h3 className="text-white text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                <Calculator className="text-blue-400" size={16} /> Resumo da Pena
                             </h3>
                         </div>
                         
-                        <div className="p-5 space-y-6">
-                            
-                            {/* Result 1 */}
-                            <div>
-                                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Pena Base (1ª Fase)</p>
-                                <div className="flex flex-col gap-1">
-                                    <div className="text-lg text-white">{formatTime(baseResult.years, baseResult.months, baseResult.days)}</div>
-                                    <div className="text-sm text-slate-400">{Math.round(multaBase)} dias-multa</div>
+                        <div className="p-4 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-slate-800/30 p-2 rounded-lg border border-slate-800">
+                                    <p className="text-[9px] text-slate-500 font-black uppercase mb-1 tracking-tight">1ª Fase: Base</p>
+                                    <p className="text-xs text-white font-bold leading-tight">{formatTime(baseResult.years, baseResult.months, baseResult.days)}</p>
+                                </div>
+                                <div className="bg-slate-800/30 p-2 rounded-lg border border-slate-800">
+                                    <p className="text-[9px] text-slate-500 font-black uppercase mb-1 tracking-tight">2ª Fase: Interm.</p>
+                                    <p className="text-xs text-white font-bold leading-tight">{formatTime(intResult.years, intResult.months, intResult.days)}</p>
                                 </div>
                             </div>
 
-                            <div className="h-px bg-slate-700 w-full" />
-
-                            {/* Result 2 */}
-                            <div>
-                                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Pena Intermediária (2ª Fase)</p>
-                                <div className="flex flex-col gap-1">
-                                    <div className="text-lg text-white">{formatTime(intResult.years, intResult.months, intResult.days)}</div>
-                                    <div className="text-sm text-slate-400">{Math.round(multaInt)} dias-multa</div>
-                                </div>
-                            </div>
-
-                            <div className="h-px bg-slate-700 w-full" />
-
-                            {/* Result 3 */}
-                            <div>
-                                <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">Pena Definitiva</p>
-                                <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                                    <div className="text-2xl font-bold text-white mb-2">
-                                        {formatTime(defResult.years, defResult.months, defResult.days)}
-                                    </div>
-                                    <div className="text-slate-300 font-medium pb-2 border-b border-slate-700 mb-4">
-                                        {multaDef} dias-multa
+                            <div className="bg-gradient-to-br from-slate-800/80 to-slate-900 border border-slate-700 p-4 rounded-xl shadow-inner group transition-all">
+                                <p className="text-emerald-400 text-[10px] font-black uppercase mb-1.5 tracking-widest group-hover:tracking-widest transition-all">Pena Definitiva</p>
+                                <div className="text-2xl font-black text-white mb-1 tabular-nums">{formatTime(defResult.years, defResult.months, defResult.days)}</div>
+                                <p className="text-xs text-slate-400 border-b border-slate-700/50 pb-3 mb-3 font-medium">{multaDef} dias-multa</p>
+                                
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-[10px] text-blue-400 uppercase font-black tracking-tighter mb-0.5">Sugestão de Regime</p>
+                                        <p className="text-sm text-blue-200 font-black leading-tight">{suggRegime}</p>
                                     </div>
 
                                     {temDetracao && detracaoDias > 0 && (
-                                        <div className="bg-slate-900 border border-purple-800 p-3 rounded-md mb-4">
-                                            <p className="text-xs text-purple-400 font-bold uppercase tracking-wider mb-1">Detração</p>
-                                            <p className="text-sm text-slate-300">- {formatTime(detracaoResult.years, detracaoResult.months, detracaoResult.days)}</p>
-                                            <p className="text-xs text-slate-400 mt-2 pt-2 border-t border-slate-800">
-                                                Restante: <span className="text-white font-medium">{formatTime(restanteResult.years, restanteResult.months, restanteResult.days)}</span>
-                                            </p>
+                                        <div className="pt-2 border-t border-slate-800 flex flex-col gap-1">
+                                            <div className="flex justify-between items-center text-[10px] text-slate-400">
+                                                <span>Detraídos:</span>
+                                                <span className="text-purple-400 font-bold">-{detracaoDias} dias</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs text-slate-200">
+                                                <span className="font-medium">Saldo Final:</span>
+                                                <span className="font-black text-emerald-400">{formatTime(restanteResult.years, restanteResult.months, restanteResult.days)}</span>
+                                            </div>
                                         </div>
                                     )}
-
-                                    <div className="">
-                                        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Sugestão de Regime Inicial</p>
-                                        <p className="text-blue-300 font-semibold">{suggRegime}</p>
-                                        {temDetracao && detracaoDias > 0 && (
-                                            <p className="text-[10px] text-slate-500 mt-1">*Regime calculado com base no saldo remanescente (Art. 387, § 2º, CPP).</p>
-                                        )}
-                                    </div>
                                 </div>
                             </div>
 
-                            {/* Benefícios Legais Card */}
+                            {/* BENEFÍCIOS COMPACTOS */}
                             {(analiseBeneficios.cabePRD || analiseBeneficios.cabeSursis) && (
-                                <div className="mt-6 space-y-3">
+                                <div className="space-y-2 pt-2 border-t border-slate-800/50">
                                     {analiseBeneficios.cabePRD && (
-                                        <div className="bg-emerald-900/30 border border-emerald-800 p-4 rounded-lg">
-                                            <h4 className="text-emerald-400 font-bold uppercase tracking-wider text-xs mb-2 flex items-center gap-2">
-                                                <AlertTriangle size={14} /> Substituição Art. 44 CP
+                                        <div className="bg-emerald-900/20 border border-emerald-500/30 p-2.5 rounded-lg border-l-4">
+                                            <h4 className="text-emerald-400 text-[9px] font-black uppercase mb-1 flex items-center gap-1.5">
+                                                <FileText size={10} /> Substituição Art. 44
                                             </h4>
-                                            <p className="text-sm text-emerald-100 whitespace-pre-line leading-relaxed">
-                                                {analiseBeneficios.prdMsg}
+                                            <p className="text-[11px] text-emerald-100/90 leading-snug font-medium italic">
+                                                {analiseBeneficios.prdMsg.split('\n')[0]}
                                             </p>
                                         </div>
                                     )}
-
                                     {analiseBeneficios.cabeSursis && (
-                                        <div className="bg-sky-900/30 border border-sky-800 p-4 rounded-lg">
-                                            <h4 className="text-sky-400 font-bold uppercase tracking-wider text-xs mb-2 flex items-center gap-2">
-                                                <AlertTriangle size={14} /> Sursis (Art. 77 CP)
+                                        <div className="bg-sky-900/20 border border-sky-500/30 p-2.5 rounded-lg border-l-4">
+                                            <h4 className="text-sky-400 text-[9px] font-black uppercase mb-1 flex items-center gap-1.5">
+                                                <AlertTriangle size={10} /> Sursis Art. 77
                                             </h4>
-                                            <p className="text-sm text-sky-100 whitespace-pre-line leading-relaxed">
-                                                {analiseBeneficios.sursisMsg}
+                                            <p className="text-[11px] text-sky-100/90 leading-snug font-medium italic">
+                                                {analiseBeneficios.sursisMsg.split('.')[0]}.
                                             </p>
                                         </div>
                                     )}
                                 </div>
                             )}
-
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     );
