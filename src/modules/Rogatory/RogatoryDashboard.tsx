@@ -60,6 +60,20 @@ export const RogatoryDashboard: React.FC<RogatoryDashboardProps> = ({ session })
         if (session) fetchLetters();
     }, [session, teamOwnerId]);
 
+    useEffect(() => {
+        const targetStr = localStorage.getItem('navigationTarget');
+        if (targetStr) {
+            try {
+                const target = JSON.parse(targetStr);
+                if (target.module === 'rogatory') {
+                    if (target.tab) setActiveTab(target.tab as any);
+                    if (target.direction) setActiveDirection(target.direction as any);
+                    localStorage.removeItem('navigationTarget');
+                }
+            } catch (e) { }
+        }
+    }, []);
+
     const handleDelete = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir esta carta precatória?')) return;
 

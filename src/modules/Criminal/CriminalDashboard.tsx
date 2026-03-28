@@ -93,6 +93,19 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
         if (session) fetchDefendants();
     }, [session, teamOwnerId]);
 
+    useEffect(() => {
+        const targetStr = localStorage.getItem('navigationTarget');
+        if (targetStr) {
+            try {
+                const target = JSON.parse(targetStr);
+                if (target.module === 'criminal' && target.tab) {
+                    setActiveTab(target.tab as any);
+                    localStorage.removeItem('navigationTarget');
+                }
+            } catch (e) { }
+        }
+    }, []);
+
     const handleSave = async (data: DefendantFormData) => {
         if (!session || !session.user) return;
         const commonData = {

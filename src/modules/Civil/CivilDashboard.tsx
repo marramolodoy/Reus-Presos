@@ -81,6 +81,19 @@ export const CivilDashboard: React.FC<CivilDashboardProps> = ({ session }) => {
         fetchCases();
     }, [session, teamOwnerId]);
 
+    useEffect(() => {
+        const targetStr = localStorage.getItem('navigationTarget');
+        if (targetStr) {
+            try {
+                const target = JSON.parse(targetStr);
+                if (target.module === 'civil' && target.tab) {
+                    setActiveCategory(target.tab as any);
+                    localStorage.removeItem('navigationTarget');
+                }
+            } catch (e) { }
+        }
+    }, []);
+
     const handleSave = async (data: CivilCaseFormData) => {
         if (!session) return;
         const commonData = {

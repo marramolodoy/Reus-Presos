@@ -51,7 +51,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
     const navItems = APP_MODULES.filter(item => {
         if (loadingRole) return false;
-        if (item.adminOnly) return isAdmin;
+        if ((item as any).adminOnly) return isAdmin;
         return checkPermission(item.permissionKey, 'view');
     });
 

@@ -4,6 +4,9 @@ import { Plus, X, Trash2, Save, Download, Palette, FileDown, Pin, Edit, ArchiveR
 import { NotesTrashModal } from './NotesTrashModal';
 import { supabase } from '../../lib/supabase';
 import { useUserRole } from '../../hooks/useUserRole';
+import { useExpiredDeadlines } from '../../hooks/useExpiredDeadlines';
+import { ExpiredDeadlinesModal } from '../../components/ExpiredDeadlinesModal';
+import { AlertTriangle, Clock, Calendar } from 'lucide-react';
 
 interface Note {
     id: string;
@@ -27,6 +30,7 @@ interface TeamMember {
 
 interface NotesBoardProps {
     session: any;
+    onNavigate: (module: string) => void;
 }
 
 const COLORS = [
@@ -93,8 +97,10 @@ const getRGB = (colorStr: string): [number, number, number] => {
     return [255, 255, 255];
 };
 
-export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
+export const NotesBoard: React.FC<NotesBoardProps> = ({ session, onNavigate }) => {
     const { teamOwnerId, unitId } = useUserRole(session);
+    const { expiredItems, loading: loadingDeadlines, refresh: refreshDeadlines, lastUpdated } = useExpiredDeadlines(session, unitId);
+    const [isDeadlinesModalOpen, setIsDeadlinesModalOpen] = useState(false);
     const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [loading, setLoading] = useState(true);
@@ -387,6 +393,40 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-20 overflow-y-auto max-h-[calc(100vh-150px)]">
+                {/* SPECIAL SYSTEM NOTE */}
+                <div 
+                    onClick={() => setIsDeadlinesModalOpen(true)}
+                    className="p-4 rounded-lg shadow-md border-t-8 border-t-red-500 transform transition-transform hover:-translate-y-1 hover:shadow-lg relative group min-h-[16rem] flex flex-col bg-red-50 border-red-200 cursor-pointer"
+                >
+                    <div className="flex items-center gap-2 mb-3">
+                        <div className="bg-red-100 p-2 rounded-full text-red-600 shrink-0">
+                            <Calendar size={20} className="animate-pulse" />
+                        </div>
+                        <h3 className="font-bold text-lg text-red-800 break-words leading-tight">Alerta de Prazos Vencidos</h3>
+                    </div>
+                    
+                    <div className="flex-1 text-sm text-red-700 leading-relaxed font-medium">
+                        Existem <span className="font-bold text-lg">{expiredItems.length}</span> ocorrências aguardando movimentação ou fora do prazo.
+                        <br/><br/>
+                        Clique aqui para visualizar a lista completa e resolver as pendências.
+                    </div>
+
+                    <div className="mt-4 text-right opacity-70 flex justify-between items-end">
+                        <div className="flex flex-col items-start gap-1">
+                            <div className="bg-red-200 px-2 py-0.5 rounded text-[10px] font-bold text-red-800 flex items-center gap-1">
+                                <AlertTriangle size={12} /> Sistema Automático
+                            </div>
+                        </div>
+                        <div>
+                            <div className="bg-white/60 px-2 py-1 rounded-md backdrop-blur-sm">
+                                <div className="text-[10px] text-red-900 font-bold font-mono text-right flex items-center justify-end gap-1">
+                                    <Clock size={10} /> {lastUpdated ? lastUpdated.toLocaleTimeString('pt-BR') : 'Aguardando...'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {notes.map(note => (
                     <div
                         key={note.id}
@@ -667,6 +707,17 @@ export const NotesBoard: React.FC<NotesBoardProps> = ({ session }) => {
                 onClose={() => setIsTrashOpen(false)}
                 session={session}
                 onRestore={fetchNotes}
+            />
+
+            {/* Deadlines Modal */}
+            <ExpiredDeadlinesModal 
+                isOpen={isDeadlinesModalOpen} 
+                onClose={() => setIsDeadlinesModalOpen(false)} 
+                items={expiredItems} 
+                onNavigate={onNavigate} 
+                onRefresh={refreshDeadlines}
+                loading={loadingDeadlines}
+                lastUpdated={lastUpdated}
             />
         </div >
     );

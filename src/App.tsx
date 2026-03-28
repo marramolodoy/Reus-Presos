@@ -238,7 +238,7 @@ export default function App() {
       case 'criminal':
         return <CriminalDashboard session={session} courtName={courtName} />;
       case 'notes':
-        return <NotesBoard session={session} />;
+        return <NotesBoard session={session} onNavigate={setActiveModule} />;
       case 'civil':
         return <CivilDashboard session={session} />;
       case 'admin':

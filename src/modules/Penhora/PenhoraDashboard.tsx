@@ -69,6 +69,19 @@ export const PenhoraDashboard: React.FC<PenhoraDashboardProps> = ({ session }) =
         if (session) fetchOrders();
     }, [session, teamOwnerId]);
 
+    useEffect(() => {
+        const targetStr = localStorage.getItem('navigationTarget');
+        if (targetStr) {
+            try {
+                const target = JSON.parse(targetStr);
+                if (target.module === 'penhora' && target.tab) {
+                    setActiveTab(target.tab as any);
+                    localStorage.removeItem('navigationTarget');
+                }
+            } catch (e) { }
+        }
+    }, []);
+
     const handleSave = async (data: PenhoraOrderFormData) => {
         const commonData = {
             name: data.name,
