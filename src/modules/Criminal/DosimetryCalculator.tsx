@@ -277,13 +277,23 @@ export const DosimetryCalculator: React.FC = () => {
                             </span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                            {judiciaisList.map(circ => (
-                                <label key={circ} className={`flex items-center gap-2 p-1.5 border rounded-lg cursor-pointer transition-all ${circunstancias[circ] ? 'bg-red-50 border-red-200 shadow-sm ring-1 ring-red-100' : 'hover:bg-gray-50 border-gray-100'}`}>
-                                    <input type="checkbox" className="accent-red-600 size-3" checked={circunstancias[circ]} 
-                                        onChange={() => setCircunstancias({...circunstancias, [circ]: !circunstancias[circ]})} />
-                                    <span className={`text-[10px] leading-tight ${circunstancias[circ] ? 'text-red-700 font-bold' : 'text-gray-600'}`}>{circ}</span>
-                                </label>
-                            ))}
+                            {judiciaisList.map(circ => {
+                                const weightTime = daysToTime(pesoPPLCircunstancia);
+                                const weightStr = formatTime(weightTime.years, weightTime.months, weightTime.days);
+                                
+                                return (
+                                    <label key={circ} className={`flex items-center gap-2 p-1.5 border rounded-lg cursor-pointer transition-all ${circunstancias[circ] ? 'bg-red-50 border-red-200 shadow-sm ring-1 ring-red-100' : 'hover:bg-gray-50 border-gray-100'}`}>
+                                        <input type="checkbox" className="accent-red-600 size-3" checked={circunstancias[circ]} 
+                                            onChange={() => setCircunstancias({...circunstancias, [circ]: !circunstancias[circ]})} />
+                                        <div className="flex flex-col">
+                                            <span className={`text-[10px] leading-tight ${circunstancias[circ] ? 'text-red-700 font-bold' : 'text-gray-600'}`}>{circ}</span>
+                                            {pesoPPLCircunstancia > 0 && (
+                                                <span className="text-[8px] font-medium text-gray-400">+{weightStr}</span>
+                                            )}
+                                        </div>
+                                    </label>
+                                );
+                            })}
                         </div>
                     </div>
 
