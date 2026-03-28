@@ -107,6 +107,12 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session,
         const processNode = (node: Node): string => {
             if (node.nodeType === Node.TEXT_NODE) {
                 let text = node.textContent || '';
+                
+                // Em HTML, quebras de linhas manuais dentro de um text node (ex: \n puro) 
+                // são interpretadas visualmente apenas como espaço. Se não a substituirmos, 
+                // a lógica de quebra em parágrafos do formatador separará a frase no meio.
+                text = text.replace(/[\r\n\t]+/g, ' ');
+
                 if (autoClean) {
                     text = text.replace(/\s*\[\s*\d{7}-\d{2}[^\]]*\|\s*[a-zA-Z]+\s*\]/g, '');
                     text = text.replace(/((\b(?:de|do|da|dos|das|no|na|nos|nas|ao|à|aos|às|pelo|pela|pelos|pelas)\s+)?)(?:\()?Id\.?\s*(\d+)(?:\s*[-–,]\s*P[aá]g\.?\s*(\d+))?(?:\)?)/gi, (_m, fullPrep, prep, id, pag) => {
@@ -136,31 +142,16 @@ export const FormatterDashboard: React.FC<FormatterDashboardProps> = ({ session,
                 }
 
                 const blockTags = ['p', 'div', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'tr'];
-                if (blockTags.includes(tag)) return result + '\n';
+                if (blockTags.includes(tag)) return '\n' + result + '\n';
                 if (tag === 'br') return '\n';
                 return result;
             }
             return '';
         };
 
-        // Chrome's contenteditable puts the FIRST typed line as a bare text node (no <div>),
-        // while all subsequent lines are wrapped in <div>. We must handle each top-level child
-        // individually and insert a \n after inline/text children so the first line doesn't
-        // get concatenated with the second.
         let rawHtml = '';
         editorRef.current.childNodes.forEach(child => {
-            const result = processNode(child);
-            rawHtml += result;
-            // If the child is a bare text node OR an inline element (not a block), add separator
-            if (child.nodeType === Node.TEXT_NODE) {
-                rawHtml += '\n';
-            } else if (child.nodeType === Node.ELEMENT_NODE) {
-                const tag = (child as HTMLElement).tagName.toLowerCase();
-                const blockTags = ['p', 'div', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'tr'];
-                if (!blockTags.includes(tag) && tag !== 'br') {
-                    rawHtml += '\n';
-                }
-            }
+            rawHtml += processNode(child);
         });
 
         // Collapse multiple consecutive \n into one, then split into lines
