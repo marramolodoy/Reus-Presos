@@ -271,29 +271,26 @@ export const DosimetryCalculator: React.FC = () => {
                     {/* FASE 1 - PENA BASE */}
                     <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-blue-500">
                         <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-xs font-bold text-gray-800 uppercase tracking-tight">1ª Fase - Circunstâncias Judiciais (Art. 59)</h3>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-xs font-bold text-gray-800 uppercase tracking-tight">1ª Fase - Circunstâncias Judiciais (Art. 59)</h3>
+                                {pesoPPLCircunstancia > 0 && (
+                                    <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[9px] font-black border border-amber-200 uppercase animate-in fade-in zoom-in duration-300">
+                                        Valor: +{formatTime(daysToTime(pesoPPLCircunstancia).years, daysToTime(pesoPPLCircunstancia).months, daysToTime(pesoPPLCircunstancia).days)} por negativa
+                                    </span>
+                                )}
+                            </div>
                             <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm">
                                 {numeroNegativas}/8 NEGATIVAS
                             </span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                            {judiciaisList.map(circ => {
-                                const weightTime = daysToTime(pesoPPLCircunstancia);
-                                const weightStr = formatTime(weightTime.years, weightTime.months, weightTime.days);
-                                
-                                return (
-                                    <label key={circ} className={`flex items-center gap-2 p-1.5 border rounded-lg cursor-pointer transition-all ${circunstancias[circ] ? 'bg-red-50 border-red-200 shadow-sm ring-1 ring-red-100' : 'hover:bg-gray-50 border-gray-100'}`}>
-                                        <input type="checkbox" className="accent-red-600 size-3" checked={circunstancias[circ]} 
-                                            onChange={() => setCircunstancias({...circunstancias, [circ]: !circunstancias[circ]})} />
-                                        <div className="flex flex-col">
-                                            <span className={`text-[10px] leading-tight ${circunstancias[circ] ? 'text-red-700 font-bold' : 'text-gray-600'}`}>{circ}</span>
-                                            {pesoPPLCircunstancia > 0 && (
-                                                <span className="text-[8px] font-medium text-gray-400">+{weightStr}</span>
-                                            )}
-                                        </div>
-                                    </label>
-                                );
-                            })}
+                            {judiciaisList.map(circ => (
+                                <label key={circ} className={`flex items-center gap-2 p-1.5 border rounded-lg cursor-pointer transition-all ${circunstancias[circ] ? 'bg-red-50 border-red-200 shadow-sm ring-1 ring-red-100' : 'hover:bg-gray-50 border-gray-100'}`}>
+                                    <input type="checkbox" className="accent-red-600 size-3" checked={circunstancias[circ]} 
+                                        onChange={() => setCircunstancias({...circunstancias, [circ]: !circunstancias[circ]})} />
+                                    <span className={`text-[10px] leading-tight ${circunstancias[circ] ? 'text-red-700 font-bold' : 'text-gray-600'}`}>{circ}</span>
+                                </label>
+                            ))}
                         </div>
                     </div>
 
