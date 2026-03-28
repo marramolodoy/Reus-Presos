@@ -80,7 +80,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         dataFato: '', dataDenuncia: '', dataPronuncia: '', dataConfirmacaoPronuncia: '',
         dataSentenca: '', dataInicioPena: '', dataReincidencia: '',
         // Bloco 4
-        citadoEdital: false, dataSuspensao: '', novoEndereco: '',
+        citadoEdital: false, dataSuspensao: '', dataCitacaoPessoal: '', novoEndereco: '',
         usePerspectiva: false
     });
 
@@ -149,11 +149,22 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         if (data.dataInicioPena) marcos.push({ label: 'Início do Cumprimento', date: data.dataInicioPena });
         if (data.dataReincidencia) marcos.push({ label: 'Reincidência', date: data.dataReincidencia });
 
-        const dataFimSuspensao = data.citadoEdital && data.dataSuspensao ? addYearsToDate(data.dataSuspensao, prazoAbstrato) : '';
+        const dataFimSuspensaoMax = data.citadoEdital && data.dataSuspensao ? addYearsToDate(data.dataSuspensao, prazoAbstrato) : '';
+        let dataFimSuspensaoAtiva = dataFimSuspensaoMax;
+        let retomadaLabel = 'Retomada (Súmula 415)';
+
+        if (dataFimSuspensaoMax && data.dataCitacaoPessoal) {
+            // A retomada ocorre pela citação pessoal ou pelo fim do prazo máximo, o que vier primeiro.
+            if (data.dataCitacaoPessoal < dataFimSuspensaoMax) {
+                dataFimSuspensaoAtiva = data.dataCitacaoPessoal;
+                retomadaLabel = 'Retomada (Prisão/Citação Pessoal)';
+            }
+        }
+
         const marcosComSuspensao = [...marcos];
-        if (dataFimSuspensao && data.dataSuspensao) {
+        if (dataFimSuspensaoAtiva && data.dataSuspensao) {
             marcosComSuspensao.push({ label: 'Suspensão (Art. 366)', date: data.dataSuspensao, isSuspension: true });
-            marcosComSuspensao.push({ label: 'Retomada (Súmula 415)', date: dataFimSuspensao, isRetomada: true });
+            marcosComSuspensao.push({ label: retomadaLabel, date: dataFimSuspensaoAtiva, isRetomada: true });
         }
         marcosComSuspensao.sort((a, b) => a.date.localeCompare(b.date));
 
@@ -172,14 +183,14 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                 diffAcumuladaDias = 0;
             }
 
-            const isSuspendedPeriod = mStart.isSuspension || (marcosComSuspensao.some(m => m.isSuspension && m.date <= mStart.date) && !mStart.isRetomada && mEnd.date <= dataFimSuspensao);
+            const isSuspendedPeriod = mStart.isSuspension || (marcosComSuspensao.some(m => m.isSuspension && m.date <= mStart.date) && !mStart.isRetomada && mEnd.date <= dataFimSuspensaoAtiva);
             
             let paramLimit = prazoAbstrato;
             if (prazoConcreto) {
                 const isAfterDenuncia = !!data.dataDenuncia && mStart.date >= data.dataDenuncia;
                 const isBefore2010 = !!data.dataFato && data.dataFato < '2010-05-05';
-                const isVirtual = !!data.usePerspectiva;
-                if (isAfterDenuncia || isBefore2010 || isVirtual) paramLimit = prazoConcreto;
+                // Prescrição virtual / em perspectiva obedece também o §1 do Art. 110 (não retroage antes da denúncia para crimes pós-2010).
+                if (isAfterDenuncia || isBefore2010) paramLimit = prazoConcreto;
             }
 
             if (data.dataReincidencia && mStart.date >= (data.dataInicioPena || '9999-12-31')) {
@@ -226,8 +237,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
             if (prazoConcreto) {
                 const isAfterDenuncia = !!data.dataDenuncia && lastMarco.date >= data.dataDenuncia;
                 const isBefore2010 = !!data.dataFato && data.dataFato < '2010-05-05';
-                const isVirtual = !!data.usePerspectiva;
-                if (isAfterDenuncia || isBefore2010 || isVirtual) projectionLimit = prazoConcreto;
+                if (isAfterDenuncia || isBefore2010) projectionLimit = prazoConcreto;
             }
             if (data.dataReincidencia && lastMarco.date >= (data.dataInicioPena || '9999-12-31')) {
                 projectionLimit = projectionLimit * 1.3333;
@@ -252,7 +262,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                     ate: 'Expectativa de Prescrição Final',
                     dateDe: lastMarco.date,
                     dateAte: dataProjetada,
-                    diff: { anos: Math.floor(anosRestantes), meses: Math.floor((anosRestantes % 1) * 12), dias: 0 },
+                    diff: diffFormat(lastMarco.date, dataProjetada) || { anos: Math.floor(anosRestantes), meses: Math.floor((anosRestantes % 1) * 12), dias: 0 },
                     limite: projectionLimit.toFixed(1).replace('.0', ''),
                     prescreveu: hasPrescritoByProjecao,
                     alerta: !hasPrescritoByProjecao && anosRestantes <= 1,
@@ -271,15 +281,19 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         // Specific Suspension Text
         let suspensaoText = '';
         if (data.citadoEdital && data.dataSuspensao) {
-            suspensaoText = `O prazo máximo de suspensão da prescrição (Súmula 415/STJ) encerrará em ${formatDateBr(dataFimSuspensao)}.`;
+            if (data.dataCitacaoPessoal && data.dataCitacaoPessoal < dataFimSuspensaoMax) {
+                suspensaoText = `A suspensão (Art. 366) foi encerrada antecipadamente em ${formatDateBr(dataFimSuspensaoAtiva)} (Prisão/Citação), antes de atingir o limite da Súmula 415/STJ que ocorreria em ${formatDateBr(dataFimSuspensaoMax)}.`;
+            } else {
+                suspensaoText = `O prazo máximo de suspensão da prescrição (Súmula 415/STJ) encerrou/encerrará em ${formatDateBr(dataFimSuspensaoMax)}.`;
+            }
         }
 
         return {
             prazoBrutoAbstrato, prazoBrutoConcreto,
             prazoAbstrato, prazoConcreto, redutorAplica, redutorMotivo,
             analiseIntervalos, prescrito, suspensaoText, projecaoPrescricaoTotal,
-            dataFimSuspensao: data.citadoEdital && data.dataSuspensao ? addYearsToDate(data.dataSuspensao, prazoAbstrato) : '',
-            dataConsumacao366: data.citadoEdital && data.dataSuspensao ? addYearsToDate(addYearsToDate(data.dataSuspensao, prazoAbstrato), prazoAbstrato) : ''
+            dataFimSuspensao: dataFimSuspensaoAtiva,
+            dataConsumacao366: data.citadoEdital && data.dataSuspensao ? addYearsToDate(dataFimSuspensaoMax, prazoAbstrato) : ''
         };
 
     }, [data]);
@@ -321,11 +335,19 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
         try {
             const doc = new jsPDF('p', 'mm', 'a4');
             doc.setFontSize(14);
-            doc.text("CALCULADORA PRESCRICIONAL CRIMINAL", 14, 15);
-            doc.setFontSize(10);
-            doc.text("Relatório de Análise em Abstrato / Concreto", 14, 21);
+            const title1 = "CALCULADORA PRESCRICIONAL CRIMINAL";
+            const title2 = "RELATÓRIO DE ANÁLISE EM ABSTRATO / CONCRETO";
             
-            let y = 30;
+            // Centralizar títulos
+            doc.text(title1, 105, 15, { align: "center" });
+            doc.setFontSize(10);
+            doc.text(title2, 105, 21, { align: "center" });
+            
+            // Draw a line under title like UI
+            doc.setLineWidth(0.5);
+            doc.line(14, 25, 196, 25);
+            
+            let y = 35;
             const addLine = (text: string, bold = false) => {
                 doc.setFont("helvetica", bold ? "bold" : "normal");
                 const lines = doc.splitTextToSize(text, 180);
@@ -335,38 +357,47 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
             };
 
             addLine("I. SÍNTESE DOS DADOS PROCESSUAIS RELEVANTES", true);
-            addLine(`Acusado: ${data.nome || 'Não informado'}`);
-            addLine(`Infração Penal: ${data.infracao}`);
-            addLine(`Data do Fato: ${formatDateBr(data.dataFato)}`);
-            addLine(`Nascimento: ${formatDateBr(data.dataNascimento)}`);
+            addLine(`   • Acusado: ${data.nome || 'Não informado'}`);
+            addLine(`   • Processo: ${data.caseNumber || '---'}`);
+            addLine(`   • Infração Penal: ${data.infracao || '---'}`);
+            addLine(`   • Data do Fato: ${formatDateBr(data.dataFato)}`);
+            addLine(`   • Nascimento: ${formatDateBr(data.dataNascimento)}`);
             y += 5;
 
             addLine("II. PRESCRIÇÃO EM ABSTRATO", true);
-            addLine(`Com base na pena máxima informada (${pMaxA}a ${pMaxM}m), o prazo abstrato é de ${report.prazoAbstrato} anos.`);
+            addLine(`   Pena Máxima: ${pMaxA} anos e ${pMaxM} meses.`);
+            addLine(`   • Prazo (Art. 109 CP): ${report.prazoBrutoAbstrato} anos.`);
             if (report.redutorAplica) {
-                addLine(`(Atenção: Aplicou-se a redução do prazo pela metade - Art. 115, CP. Acusado era ${report.redutorMotivo})`);
+                addLine(`   • Prazo Reduzido (Art. 115 CP - Metade): ${report.prazoAbstrato} anos.`);
+                y += 2;
+                addLine(`   (Atenção: O acusado é ${report.redutorMotivo})`);
             }
             y += 5;
 
             if (pAplA > 0 || pAplM > 0) {
                 addLine("III. PRESCRIÇÃO EM CONCRETO (SENTENÇA)", true);
-                addLine(`Prazo concretizado a partir da pena aplicada: ${report.prazoConcreto} anos.`);
+                addLine(`   Pena Aplicada: ${pAplA} anos e ${pAplM} meses.`);
+                addLine(`   • Prazo (Art. 109 CP): ${report.prazoBrutoConcreto} anos.`);
+                if (report.redutorAplica) {
+                    addLine(`   • Prazo Reduzido (Art. 115 CP - Metade): ${report.prazoConcreto} anos.`);
+                }
                 y += 5;
             }
 
             addLine("IV. ANÁLISE CRONOLÓGICA DOS MARCOS INTERRUPTIVOS", true);
             if (report.analiseIntervalos.length > 0) {
-                const head = [["De", "Data A", "Até", "Data B", "Lapso", "Limit", "Status"]];
+                const head = [["De", "Data A", "Até", "Data B", "Lapso no Período", "Acumulado Total", "Tolerância", "Status"]];
                 const body = report.analiseIntervalos.map((i: any) => [
                     i.de, formatDateBr(i.dateDe), i.ate, formatDateBr(i.dateAte),
-                    i.suspenso ? "PRAZO SUSPENSO" : (i.isExpectation ? "---" : `${i.diff.anos}a ${i.diff.meses}m ${i.diff.dias}d`), 
+                    i.suspenso ? "Suspenso" : (i.isExpectation ? `Faltam ${i.diff.anos}a ${i.diff.meses}m ${i.diff.dias}d` : `${i.diff.anos}a ${i.diff.meses}m ${i.diff.dias}d`), 
+                    i.suspenso ? "Suspenso" : (i.isExpectation ? `Alvo: ${i.limite}a` : `${Math.floor(i.acumuladoAnos)} anos`),
                     i.suspenso ? "---" : `${i.limite}a`, 
                     i.suspenso ? "SUSPENSO" : (i.prescreveu ? "PRESCRITO" : (i.isExpectation ? "PROJECAO" : (i.alerta ? "ALERTA" : "OK")))
                 ]);
                 autoTable(doc, { 
                     head, body, startY: y, 
                     styles: { fontSize: 7 }, 
-                    columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 20 }, 2: { cellWidth: 25 }, 3: { cellWidth: 20 } },
+                    columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 15 }, 2: { cellWidth: 20 }, 3: { cellWidth: 15 } },
                     headStyles: { fillColor: [40, 40, 40] },
                     didParseCell: (data) => {
                         if (data.section === 'body' && data.column.index === 6) {
@@ -462,7 +493,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                                     onChange={(e) => handleChange('usePerspectiva', e.target.checked)}
                                 />
                                 <label htmlFor="usePerspectiva" className="text-[10px] text-green-800 font-semibold leading-tight">
-                                    Prescrição Virtual (ignora vedação Art. 110 CP)
+                                    Prescrição Virtual (em Perspectiva / Antecipada)
                                 </label>
                             </div>
                         </div>
@@ -518,7 +549,11 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                         <div className="grid grid-cols-1 gap-4 bg-gray-50 p-4 rounded border">
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">Data da Suspensão (Art. 366)</label>
-                                <input type="date" value={data.dataSuspensao} onChange={e => handleChange('dataSuspensao', e.target.value)} className="w-full border rounded p-2 text-sm outline-none" />
+                                <input type="date" value={data.dataSuspensao} onChange={e => handleChange('dataSuspensao', e.target.value)} className="w-full border rounded p-2 text-sm outline-none bg-blue-50/30" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-justice-700 mb-1">Prisão / Citação Pessoal (Fim Antecipado?)</label>
+                                <input type="date" value={data.dataCitacaoPessoal} onChange={e => handleChange('dataCitacaoPessoal', e.target.value)} className="w-full border rounded p-2 text-sm outline-none border-justice-200" />
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">Novo endereço fornecido pelo MP?</label>
@@ -640,7 +675,8 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                                                     <th className="p-2 border-b">Data A</th>
                                                     <th className="p-2 border-b">Até (Marco B)</th>
                                                     <th className="p-2 border-b">Data B</th>
-                                                    <th className="p-2 border-b">Lapso</th>
+                                                    <th className="p-2 border-b text-center">Lapso no Período</th>
+                                                    <th className="p-2 border-b text-center">Acumulado Total</th>
                                                     <th className="p-2 border-b text-center">Tolerância</th>
                                                     <th className="p-2 border-b text-center">Status</th>
                                                 </tr>
@@ -653,7 +689,10 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                                                         <td className="p-2">{interval.ate}</td>
                                                         <td className="p-2 font-mono text-[10px]">{formatDateBr(interval.dateAte)}</td>
                                                         <td className="p-2 text-center font-medium whitespace-nowrap">
-                                                            {interval.suspenso ? 'Suspenso' : (interval.isExpectation ? '---' : `${interval.diff.anos}a ${interval.diff.meses}m ${interval.diff.dias}d`)}
+                                                            {interval.suspenso ? 'Suspenso' : (interval.isExpectation ? `Faltam ${interval.diff.anos}a ${interval.diff.meses}m ${interval.diff.dias}d` : `${interval.diff.anos}a ${interval.diff.meses}m ${interval.diff.dias}d`)}
+                                                        </td>
+                                                        <td className="p-2 text-center font-bold text-gray-700 whitespace-nowrap bg-gray-50">
+                                                            {interval.suspenso ? 'Suspenso' : (interval.isExpectation ? `Alvo: ${interval.limite}a` : `${Math.floor(interval.acumuladoAnos)} anos`)}
                                                         </td>
                                                         <td className="p-2 text-center text-gray-600 font-mono text-[10px]">{interval.suspenso ? '---' : `${interval.limite}a`}</td>
                                                         <td className={`p-2 font-bold text-center uppercase text-[10px] ${
