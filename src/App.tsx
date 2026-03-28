@@ -52,16 +52,34 @@ export default function App() {
   // Get Role AND Unit
   const { role, unit, unitId, loading: loadingRole } = useUserRole(session);
 
-  // Force Update Logic
+  // Force Version update Check (Active Polling)
   useEffect(() => {
-    const localVersion = localStorage.getItem('app_version');
-    if (localVersion && localVersion !== APP_VERSION) {
-      console.log(`Nova versão detectada (${APP_VERSION}). Atualizando...`);
-      localStorage.setItem('app_version', APP_VERSION);
-      window.location.reload();
-    } else if (!localVersion) {
-      localStorage.setItem('app_version', APP_VERSION);
-    }
+    const checkVersion = async () => {
+      try {
+        // Use a timestamp to bypass any intermediate caching
+        const response = await fetch(`/version.json?t=${Date.now()}`, { 
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.version && data.version !== APP_VERSION) {
+            console.log(`Nova versão detectada (${data.version}). Sistema atualizando...`);
+            // Brief delay before reload to avoid interruptive loops
+            setTimeout(() => window.location.reload(), 1000);
+          }
+        }
+      } catch (err) {
+        // Silently fail to not disturb user experience
+        console.debug('Falha ao verificar versão:', err);
+      }
+    };
+
+    // Check on mount and every 2 minutes
+    checkVersion();
+    const interval = setInterval(checkVersion, 120000);
+    return () => clearInterval(interval);
   }, []);
 
   // Load Unit Settings from Supabase
