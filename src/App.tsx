@@ -41,10 +41,10 @@ export default function App() {
     return saved ? JSON.parse(saved) : {
       fontFamily: 'Century Gothic',
       fontSize: 13,
-      marginTop: 3.0,
-      marginBottom: 2.0,
-      marginLeft: 3.0,
-      marginRight: 2.0,
+      marginTop: 1.0,
+      marginBottom: 1.0,
+      marginLeft: 1.0,
+      marginRight: 1.0,
       indent: 2.0
     };
   });
@@ -91,11 +91,11 @@ export default function App() {
             const settings = {
               fontFamily: data.formatter_font || 'Century Gothic',
               fontSize: data.formatter_font_size || 13,
-              marginTop: data.formatter_margin_top || 3.0,
-              marginBottom: data.formatter_margin_bottom || 2.0,
-              marginLeft: data.formatter_margin_left || 3.0,
-              marginRight: data.formatter_margin_right || 2.0,
-              indent: data.formatter_indent || 2.0
+              marginTop: data.formatter_margin_top !== null && data.formatter_margin_top !== undefined ? data.formatter_margin_top : 1.0,
+              marginBottom: data.formatter_margin_bottom !== null && data.formatter_margin_bottom !== undefined ? data.formatter_margin_bottom : 1.0,
+              marginLeft: data.formatter_margin_left !== null && data.formatter_margin_left !== undefined ? data.formatter_margin_left : 1.0,
+              marginRight: data.formatter_margin_right !== null && data.formatter_margin_right !== undefined ? data.formatter_margin_right : 1.0,
+              indent: data.formatter_indent !== null && data.formatter_indent !== undefined ? data.formatter_indent : 2.0
             };
             setFormatterSettings(settings);
             localStorage.setItem('formatter_settings', JSON.stringify(settings));
