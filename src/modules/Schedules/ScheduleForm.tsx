@@ -49,7 +49,8 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ initialData, initial
                 type: initialData.type,
                 hearingType: initialData.hearingType,
                 competence: initialData.competence,
-                expertiseType: initialData.expertiseType
+                expertiseType: initialData.expertiseType,
+                expertName: initialData.expertName
             } as any);
         } else {
             setFormData(prev => ({ ...prev, type: initialType }));
@@ -236,16 +237,28 @@ export const ScheduleForm: React.FC<ScheduleFormProps> = ({ initialData, initial
                         </select>
                     </div>
                 ) : (
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Perícia *</label>
-                        <input
-                            type="text"
-                            required
-                            className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-200 outline-none"
-                            value={formData.expertiseType || ''}
-                            onChange={e => setFormData({ ...formData, expertiseType: e.target.value })}
-                            placeholder="Ex: Médica, Engenharia, Social..."
-                        />
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Perícia *</label>
+                            <input
+                                type="text"
+                                required
+                                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-200 outline-none"
+                                value={formData.expertiseType || ''}
+                                onChange={e => setFormData({ ...formData, expertiseType: e.target.value })}
+                                placeholder="Ex: Médica, Engenharia, Social..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Perito Nomeado</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-purple-200 outline-none"
+                                value={(formData as any).expertName || ''}
+                                onChange={e => setFormData({ ...formData, expertName: e.target.value } as any)}
+                                placeholder="Ex: Dr. João Silva"
+                            />
+                        </div>
                     </div>
                 )}
 

@@ -153,6 +153,7 @@ export interface PendingSchedule {
   hearingType?: 'Conciliação' | 'Preliminar' | 'AIJ' | 'Continuação'; // hearing_type
   competence: 'Juizado' | 'Cível' | 'Criminal' | 'Delegada';
   expertiseType?: string; // expertise_type
+  expertName?: string; // expert_name (Nome do perito nomeado)
   status: 'pending' | 'resolved'; // Status "Geral" (Ativo/Arquivado)
   completionStatus?: 'pending' | 'partial' | 'completed'; // Status do Cumprimento (Cor)
   tags?: string[]; // tags (List of tags like 'Réu Preso', 'Menor', etc.)
@@ -249,3 +250,37 @@ export interface SuspendedCase {
 }
 
 export type SuspendedCaseFormData = Omit<SuspendedCase, 'id' | 'user_id' | 'deleted_at'>;
+
+export interface Expert {
+  id: string;
+  name: string;
+  specialty: string;
+  contact?: string;
+  bank_info?: string;
+  is_active: boolean;
+  user_id: string;
+  unit_id?: string;
+  created_at?: string;
+  deleted_at?: string | null;
+}
+
+export type ExpertFormData = Omit<Expert, 'id' | 'user_id' | 'unit_id' | 'created_at' | 'deleted_at'>;
+
+export interface ExpertAppointment {
+  id: string;
+  expert_id: string;
+  process_number: string;
+  appointment_date: string;
+  status: 'Nomeado' | 'Aceitou o Encargo' | 'Aguardando Laudo' | 'Laudo Entregue' | 'Suspenso' | 'Destituído';
+  fee_amount?: number;
+  fee_status: 'Não Pago' | 'Parcial' | 'Pago' | 'AJG';
+  obs?: string;
+  user_id: string;
+  unit_id?: string;
+  created_at?: string;
+  deleted_at?: string | null;
+
+  experts?: Expert; // For joins
+}
+
+export type ExpertAppointmentFormData = Omit<ExpertAppointment, 'id' | 'user_id' | 'unit_id' | 'created_at' | 'deleted_at' | 'experts'>;

@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Gavel, Stethoscope, Clock, CheckCircle, Calendar, LayoutGrid, List, Plus, Tag, X, Trash2, Lock, AlertCircle, Baby, User, Edit2 } from 'lucide-react';
 import { PendingSchedule } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -156,7 +157,7 @@ export const ScheduleCalendar: React.FC<ScheduleCalendarProps> = ({ schedules, o
         return tags.filter(t => t.date === dateStr);
     };
 
-    const ScheduleItem = ({ item }: { item: PendingSchedule }) => {
+    const ScheduleItem: React.FC<{ item: PendingSchedule }> = ({ item }) => {
         let bgClass = '';
         let borderClass = '';
         let textClass = '';
