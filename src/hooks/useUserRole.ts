@@ -32,19 +32,19 @@ export function useUserRole(session: any) {
                     .single();
 
                 if (roleError || !roleData) {
-                    console.log('Role not found, defaulting to independent admin');
-                    setRole('admin');
+                    console.log('Role not found, defaulting to readonly');
+                    setRole('readonly');
                     setPermissions({
-                        criminal: 'admin',
-                        civil: 'admin',
-                        lawyer_requests: 'admin',
-                        sticky_notes: 'admin',
-                        administrative: 'admin',
-                        rogatory: 'admin',
-                        critical_issues: 'admin',
-                        penhora: 'admin',
-                        schedules: 'admin',
-                        productivity: 'admin'
+                        criminal: 'view',
+                        civil: 'view',
+                        lawyer_requests: 'view',
+                        sticky_notes: 'view',
+                        administrative: 'view',
+                        rogatory: 'view',
+                        critical_issues: 'view',
+                        penhora: 'view',
+                        schedules: 'view',
+                        productivity: 'view'
                     });
                     setTeamOwnerId(session.user.id);
                     setUnit(null);
@@ -65,7 +65,7 @@ export function useUserRole(session: any) {
                 }
             } catch (err) {
                 console.error('Error fetching role/team:', err);
-                setRole('admin');
+                setRole('readonly');
                 setTeamOwnerId(session.user.id);
             } finally {
                 setLoading(false);
