@@ -1,0 +1,11 @@
+import { createClient } from '@supabase/supabase-js';
+const SUPABASE_URL = 'https://hldlfcjnhtutxxliwopj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsZGxmY2puaHR1dHh4bGl3b3BqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5NDIxOTgsImV4cCI6MjA4MjUxODE5OH0.7qGq6DmODM7slyVlJklmjpd64xX01LJ-gkqwkn_M1YE';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function check() {
+    const { data: roles, error } = await supabase.from('user_roles').select('id, user_id, role, unit, unit_id').limit(10);
+    console.log("Roles:", JSON.stringify(roles, null, 2));
+    console.log("Error:", error);
+}
+check();

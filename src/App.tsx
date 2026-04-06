@@ -50,7 +50,30 @@ export default function App() {
   });
 
   // Get Role AND Unit
-  const { role, unit, unitId, loading: loadingRole } = useUserRole(session);
+  const { role, unit, unitId, loading: loadingRole, checkPermission, isAdmin } = useUserRole(session);
+
+  // Auto-switch to an allowed module if current one isn't permitted
+  useEffect(() => {
+    if (loadingRole || !session) return;
+    
+    const currentModuleObj = APP_MODULES.find(m => m.id === activeModule);
+    if (!currentModuleObj) return;
+
+    const isAllowed = ((currentModuleObj as any).adminOnly) 
+      ? isAdmin 
+      : checkPermission(currentModuleObj.permissionKey, 'view');
+
+    if (!isAllowed) {
+      const firstAllowed = APP_MODULES.find(item => {
+        if ((item as any).adminOnly) return isAdmin;
+        return checkPermission(item.permissionKey, 'view');
+      });
+
+      if (firstAllowed) {
+        setActiveModule(firstAllowed.id);
+      }
+    }
+  }, [loadingRole, role, checkPermission, isAdmin, activeModule, session]);
 
   // Force Version update Check (Active Polling)
   useEffect(() => {

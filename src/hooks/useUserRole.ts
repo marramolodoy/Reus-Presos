@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 export type UserRole = 'super_admin' | 'admin' | 'restricted' | 'readonly' | 'server' | null;
@@ -80,11 +80,11 @@ export function useUserRole(session: any) {
     const canDelete = role === 'admin' || isSuperAdmin;
     const canEdit = role === 'admin' || isSuperAdmin;
 
-    const checkPermission = (module: string, requiredLevel: PermissionLevel): boolean => {
+    const checkPermission = useCallback((module: string, requiredLevel: PermissionLevel): boolean => {
         const userLevel = permissions[module] || 'none';
         const levels = ['none', 'view', 'edit', 'admin'];
         return levels.indexOf(userLevel) >= levels.indexOf(requiredLevel);
-    };
+    }, [permissions]);
 
     return { role, permissions, teamOwnerId, unit, unitId, isAdmin, isSuperAdmin, canDelete, canEdit, checkPermission, loading };
 }

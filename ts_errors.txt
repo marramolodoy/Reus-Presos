@@ -1,0 +1,29 @@
+src/components/CivilExportModal.tsx(78,38): error TS2367: This comparison appears to be unintentional because the types '"Urgentes" | "Acolhidos" | "Apreendidos" | "Infracionais" | "Adoção" | "RPV" | "Precatório" | "Alvarás"' and '"Advogados"' have no overlap.
+src/components/ErrorBoundary.tsx(55,21): error TS2339: Property 'props' does not exist on type 'ErrorBoundary'.
+src/layouts/MainLayout.tsx(54,18): error TS2339: Property 'adminOnly' does not exist on type '{ readonly id: "criminal"; readonly label: "Criminal"; readonly icon: react.ForwardRefExoticComponent<any>; readonly permissionKey: "criminal"; } | { readonly id: "civil"; readonly label: "Cível & Menores"; readonly icon: react.ForwardRefExoticComponent<...>; readonly permissionKey: "civil"; } | ... 10 more ... | { ...'.
+  Property 'adminOnly' does not exist on type '{ readonly id: "criminal"; readonly label: "Criminal"; readonly icon: react.ForwardRefExoticComponent<any>; readonly permissionKey: "criminal"; }'.
+src/modules/Civil/CivilDashboard.tsx(210,17): error TS2367: This comparison appears to be unintentional because the types '"Urgentes" | "Acolhidos" | "Apreendidos" | "Infracionais" | "Adoção" | "RPV" | "Precatório" | "Alvarás"' and '"Advogados"' have no overlap.
+src/modules/Civil/CivilDashboard.tsx(295,26): error TS2367: This comparison appears to be unintentional because the types '"Urgentes" | "Acolhidos" | "Apreendidos" | "Infracionais" | "Adoção" | "RPV" | "Precatório" | "Alvarás"' and '"Advogados"' have no overlap.
+src/modules/CriticalIssues/CriticalIssuesDashboard.tsx(82,26): error TS2339: Property 'status' does not exist on type 'CriticalIssueFormData'.
+src/modules/Notes/NotesTrashModal.tsx(4,10): error TS2459: Module '"./NotesBoard"' declares 'Note' locally, but it is not exported.
+src/modules/Penhora/PenhoraDashboard.tsx(85,32): error TS2339: Property 'isConcluded' does not exist on type 'PenhoraOrderFormData'.
+src/modules/Penhora/PenhoraDashboard.tsx(86,32): error TS2339: Property 'isConcluded' does not exist on type 'PenhoraOrderFormData'.
+src/modules/Penhora/PenhoraDashboard.tsx(86,52): error TS2339: Property 'concludedAt' does not exist on type 'PenhoraOrderFormData'.
+src/modules/Penhora/PenhoraDashboard.tsx(119,36): error TS2339: Property 'isConcluded' does not exist on type 'PenhoraOrder'.
+src/modules/Schedules/ScheduleCalendar.tsx(22,32): error TS2503: Cannot find namespace 'React'.
+src/modules/Schedules/ScheduleCalendar.tsx(24,43): error TS2304: Cannot find name 'useState'.
+src/modules/Schedules/ScheduleCalendar.tsx(25,29): error TS2304: Cannot find name 'useState'.
+src/modules/Schedules/ScheduleCalendar.tsx(28,29): error TS2304: Cannot find name 'useState'.
+src/modules/Schedules/ScheduleCalendar.tsx(29,49): error TS2304: Cannot find name 'useState'.
+src/modules/Schedules/ScheduleCalendar.tsx(30,57): error TS2304: Cannot find name 'useState'.
+src/modules/Schedules/ScheduleCalendar.tsx(31,43): error TS2304: Cannot find name 'useState'.
+src/modules/Schedules/ScheduleCalendar.tsx(32,45): error TS2304: Cannot find name 'useState'.
+src/modules/Schedules/ScheduleCalendar.tsx(41,5): error TS2304: Cannot find name 'useEffect'.
+src/modules/Schedules/ScheduleCalendar.tsx(52,48): error TS2503: Cannot find namespace 'React'.
+src/modules/Schedules/ScheduleCalendar.tsx(99,51): error TS2503: Cannot find namespace 'React'.
+src/modules/Schedules/ScheduleCalendar.tsx(264,59): error TS2322: Type '{ key: any; item: any; }' is not assignable to type '{ item: PendingSchedule; }'.
+  Property 'key' does not exist on type '{ item: PendingSchedule; }'.
+src/modules/Schedules/ScheduleCalendar.tsx(307,77): error TS2322: Type '{ key: any; item: any; }' is not assignable to type '{ item: PendingSchedule; }'.
+  Property 'key' does not exist on type '{ item: PendingSchedule; }'.
+src/modules/Team/PermissionModal.tsx(15,21): error TS2339: Property 'adminOnly' does not exist on type '{ readonly id: "criminal"; readonly label: "Criminal"; readonly icon: react.ForwardRefExoticComponent<any>; readonly permissionKey: "criminal"; } | { readonly id: "civil"; readonly label: "Cível & Menores"; readonly icon: react.ForwardRefExoticComponent<...>; readonly permissionKey: "civil"; } | ... 10 more ... | { ...'.
+  Property 'adminOnly' does not exist on type '{ readonly id: "criminal"; readonly label: "Criminal"; readonly icon: react.ForwardRefExoticComponent<any>; readonly permissionKey: "criminal"; }'.

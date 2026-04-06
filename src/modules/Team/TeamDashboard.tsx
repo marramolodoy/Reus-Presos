@@ -187,9 +187,16 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
             });
 
             if (error) throw error;
+            
+            if (data && typeof data === 'object' && data.success === false) {
+                throw new Error(data.message || 'Falha na validação do servidor.');
+            }
+
             fetchTeam();
         } catch (error: any) {
-            alert('Erro ao atualizar função: ' + error.message);
+            console.error('Update Role Error:', error);
+            alert('Erro ao atualizar função: ' + (error.message || 'Erro desconhecido.'));
+            fetchTeam(); // Reset dropdown visually if it failed
         }
     };
 
@@ -211,7 +218,10 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const { error } = await supabase.from('user_profiles').upsert({ user_id: profileModal.user.user_id, name: profilingName });
+            const { error } = await supabase.rpc('update_user_profile', {
+                target_user_id: profileModal.user.user_id,
+                new_name: profilingName
+            });
             if (error) throw error;
             setProfileModal({ isOpen: false, user: null });
             fetchTeam();

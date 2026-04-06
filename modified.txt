@@ -1,0 +1,12 @@
+﻿C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\modified.txt
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\package-lock.json
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\test_calc.js
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\dist\index.html
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\dist\assets\html2canvas.esm-QH1iLAAe.js
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\dist\assets\index-Bg85uiyZ.js
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\dist\assets\index.es-KxifPcnp.js
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\dist\assets\purify.es-B9ZVCkUG.js
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\node_modules\.package-lock.json
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\src\App.tsx
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\src\modules\Criminal\PrescriptionCalculator.tsx
+C:\Users\wende\Downloads\Reus-Presos-main\Reus-Presos-main\src\modules\Formatter\FormatterDashboard.tsx
