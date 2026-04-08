@@ -3,7 +3,7 @@ export interface Defendant {
   name: string; // Réu
   caseNumber: string; // Processo
   penalType: string; // Tipo penal
-  prisonType: 'Preventiva' | 'Temporária' | 'Provisória' | 'Definitiva' | 'Cível' | 'Domiciliar'; // Tipo de Prisão
+  prisonType: 'Preventiva' | 'Temporária' | 'Provisória' | 'Definitiva' | 'Cível' | 'Domiciliar' | 'Liberdade Provisória'; // Tipo de Prisão
   arrestDate: string; // Data da última prisão (YYYY-MM-DD)
   lastReviewDate: string; // Data da última revisão (YYYY-MM-DD)
   movementType: string; // Tipo de Movimentação
@@ -101,6 +101,8 @@ export interface SeiRequest {
   currentSector: string;
   responsibleServer: string;
   status: string;
+  isConcluded?: boolean;
+  concludedAt?: string | null;
   user_id: string;
   unit_id?: string;
   deletedAt?: string | null;

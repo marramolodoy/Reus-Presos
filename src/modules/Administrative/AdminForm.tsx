@@ -131,7 +131,7 @@ export const AdminForm: React.FC<AdminFormProps> = ({ onClose, onSuccess, sessio
                 const fileName = `${Math.random()}.${fileExt}`;
                 const { error: uploadError, data } = await supabase.storage
                     .from('documents')
-                    .upload(`${teamOwnerId || session.user.id}/${fileName}`, file);
+                    .upload(`${session.user.id}/${fileName}`, file);
 
                 if (uploadError) throw uploadError;
 
@@ -169,7 +169,7 @@ export const AdminForm: React.FC<AdminFormProps> = ({ onClose, onSuccess, sessio
                         issuer: formData.issuer,
                         document_type: formData.documentType,
                         file_path: filePath,
-                        user_id: teamOwnerId || session.user.id,
+                        user_id: session.user.id,
                         unit_id: unitId
                     }]);
 

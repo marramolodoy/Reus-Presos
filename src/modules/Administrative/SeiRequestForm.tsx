@@ -57,7 +57,7 @@ export const SeiRequestForm: React.FC<SeiRequestFormProps> = ({ onClose, onSucce
                     current_sector: formData.currentSector,
                     responsible_server: formData.responsibleServer,
                     status: formData.status,
-                    user_id: teamOwnerId || session.user.id,
+                    user_id: session.user.id,
                     unit_id: unitId
                 };
 

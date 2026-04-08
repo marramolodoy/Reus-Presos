@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { AdministrativeDocument, SeiRequest } from '../../types';
 
 import { useUserRole } from '../../hooks/useUserRole';
-import { Plus, Search, FileText, Download, Trash2, Filter, Edit, ArchiveRestore, Clock, Copy, AlertTriangle } from 'lucide-react';
+import { Plus, Search, FileText, Download, Trash2, Filter, Edit, ArchiveRestore, Clock, Copy, AlertTriangle, CheckCircle, RotateCcw } from 'lucide-react';
 import { AdminForm } from './AdminForm';
 import { AdminExportModal } from './AdminExportModal';
 import { AdminTrashModal } from './AdminTrashModal';
@@ -37,6 +37,7 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
     const [editingSei, setEditingSei] = useState<SeiRequest | undefined>(undefined);
     const [reminderData, setReminderData] = useState<{ isOpen: boolean, sei: SeiRequest | null }>({ isOpen: false, sei: null });
     const [isSeiExportOpen, setIsSeiExportOpen] = useState(false);
+    const [seiFilter, setSeiFilter] = useState<'ativos' | 'concluidos'>('ativos');
 
     const fetchData = async () => {
         if (!session) return;
@@ -81,6 +82,8 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
             currentSector: d.current_sector,
             responsibleServer: d.responsible_server,
             status: d.status,
+            isConcluded: d.is_concluded,
+            concludedAt: d.concluded_at,
             user_id: d.user_id,
             unit_id: d.unit_id
         })));
@@ -167,11 +170,47 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
         else fetchData();
     };
 
-    const filteredSei = seiRequests.filter(s =>
-        s.processNumber.includes(searchTerm) ||
-        s.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.responsibleServer.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleConcludeSei = async (id: string) => {
+        if (!confirm("Deseja marcar este pedido SEI como concluído? Ele sairá da lista de ativos.")) return;
+        try {
+            const { error } = await supabase.from('sei_requests').update({ 
+                status: 'Concluído', 
+                is_concluded: true, 
+                concluded_at: new Date().toISOString() 
+            }).eq('id', id);
+            
+            if (error) throw error;
+            fetchData();
+        } catch (error: any) {
+            alert("Erro ao concluir: " + error.message);
+        }
+    };
+
+    const handleRevertSei = async (id: string) => {
+        if (!confirm("Deseja reabrir este pedido SEI? Ele voltará para a lista de ativos.")) return;
+        try {
+            const { error } = await supabase.from('sei_requests').update({ 
+                status: 'Em aberto', 
+                is_concluded: false, 
+                concluded_at: null 
+            }).eq('id', id);
+            
+            if (error) throw error;
+            fetchData();
+        } catch (error: any) {
+            alert("Erro ao reabrir: " + error.message);
+        }
+    };
+
+    const filteredSei = seiRequests.filter(s => {
+        const matchesSearch = s.processNumber.includes(searchTerm) ||
+            s.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.responsibleServer.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesStatus = seiFilter === 'ativos' ? !s.isConcluded : s.isConcluded;
+        
+        return matchesSearch && matchesStatus;
+    });
 
     const openReminderModal = (sei: SeiRequest) => {
         setReminderData({ isOpen: true, sei });
@@ -244,6 +283,10 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
                     </>
                 ) : (
                     <>
+                        <div className="flex bg-gray-100 p-1 rounded-lg mr-auto">
+                            <button onClick={() => setSeiFilter('ativos')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${seiFilter === 'ativos' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Ativos</button>
+                            <button onClick={() => setSeiFilter('concluidos')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${seiFilter === 'concluidos' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Concluídos</button>
+                        </div>
                         <button onClick={() => setIsSeiExportOpen(true)} className="bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2 shadow-sm"><Download size={20} /></button>
                         <button onClick={() => { setEditingSei(undefined); setIsSeiFormOpen(true); }} className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 flex items-center gap-2 shadow-sm font-medium"><Plus size={20} /> Novo Pedido</button>
                     </>
@@ -324,6 +367,16 @@ export const AdminDashboard: React.FC<{ session: any }> = ({ session }) => {
                                             </button>
                                         )}
                                         <div className="flex gap-1 ml-auto">
+                                            {!sei.isConcluded && hasEdit && (
+                                                <button onClick={() => handleConcludeSei(sei.id)} className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded" title="Concluir processo">
+                                                    <CheckCircle size={18} />
+                                                </button>
+                                            )}
+                                            {sei.isConcluded && hasEdit && (
+                                                <button onClick={() => handleRevertSei(sei.id)} className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded" title="Reabrir processo">
+                                                    <RotateCcw size={18} />
+                                                </button>
+                                            )}
                                             {hasEdit && <button onClick={() => { setEditingSei(sei); setIsSeiFormOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><Edit size={18} /></button>}
                                             {hasAdmin && <button onClick={() => handleDeleteSei(sei.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"><Trash2 size={18} /></button>}
                                         </div>

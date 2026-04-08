@@ -12,7 +12,9 @@ import {
     CalendarDays,
     Edit,
     Trash,
-    MoreHorizontal
+    MoreHorizontal,
+    Unlock,
+    RotateCcw
 } from 'lucide-react';
 import { Defendant, DefendantFormData, DashboardStats } from '../../types';
 import { DefendantForm } from '../../components/DefendantForm';
@@ -55,7 +57,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
     const [editingId, setEditingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'provisional_definitive' | 'civil' | 'dashboard' | 'calculator' | 'dosimetry_calculator' | 'suspended'>('preventive');
+    const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'provisional_definitive' | 'civil' | 'liberados' | 'dashboard' | 'calculator' | 'dosimetry_calculator' | 'suspended'>('preventive');
 
     // Sorting
     type SortOption = 'no_review_asc' | 'imprisonment_asc' | 'no_movement_asc' | 'name_asc';
@@ -158,6 +160,52 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
         });
     };
 
+    const handleGrantLiberty = (id: string, name: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Conceder Liberdade Provisória',
+            description: `Deseja registrar concessão de liberdade provisória para "${name}"?`,
+            onConfirm: async () => {
+                const { error } = await supabase
+                    .from('defendants')
+                    .update({ 
+                        prison_type: 'Liberdade Provisória',
+                        movement_type: 'Liberdade Provisória concedida',
+                        last_movement_date: new Date().toISOString().split('T')[0]
+                    })
+                    .eq('id', id);
+
+                if (error) alert('Erro ao conceder liberdade: ' + error.message);
+                else await fetchDefendants();
+
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
+    const handleRevertLiberty = (id: string, name: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Revogar Liberdade Provisória',
+            description: `Deseja reintegrar "${name}" aos Preventivos?`,
+            onConfirm: async () => {
+                const { error } = await supabase
+                    .from('defendants')
+                    .update({ 
+                        prison_type: 'Preventiva',
+                        movement_type: 'Mandado cumprido / Reintegrado',
+                        last_movement_date: new Date().toISOString().split('T')[0]
+                    })
+                    .eq('id', id);
+
+                if (error) alert('Erro ao revogar liberdade: ' + error.message);
+                else await fetchDefendants();
+
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
     // ... (rest of component) ...
 
     const filteredDefendants = defendants.filter(d => {
@@ -168,6 +216,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
         } else if (activeTab === 'home_arrest') matchesTab = d.prisonType === 'Domiciliar';
         else if (activeTab === 'provisional_definitive') matchesTab = d.prisonType === 'Provisória' || d.prisonType === 'Definitiva';
         else if (activeTab === 'civil') matchesTab = d.prisonType === 'Cível';
+        else if (activeTab === 'liberados') matchesTab = d.prisonType === 'Liberdade Provisória';
         return matchesSearch && matchesTab;
     });
 
@@ -278,6 +327,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                 <button onClick={() => setActiveTab('home_arrest')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'home_arrest' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Domiciliar</button>
                 <button onClick={() => setActiveTab('provisional_definitive')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'provisional_definitive' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Prov./Definitivo</button>
                 <button onClick={() => setActiveTab('civil')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'civil' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Cíveis</button>
+                <button onClick={() => setActiveTab('liberados')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'liberados' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Lib. Provisória</button>
                 <button onClick={() => setActiveTab('dashboard')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'dashboard' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Painel Gráfico</button>
                 <button onClick={() => setActiveTab('calculator')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'calculator' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Calc. Prescricional</button>
                 <button onClick={() => setActiveTab('dosimetry_calculator')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'dosimetry_calculator' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Calc. Dosimetria</button>
@@ -390,6 +440,16 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex justify-end gap-2 relative z-10">
+                                                    {(hasAdmin || hasEdit) && activeTab === 'preventive' && (
+                                                        <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleGrantLiberty(d.id, d.name); }} title="Conceder Liberdade Provisória">
+                                                            <Unlock size={16} className="text-green-600" />
+                                                        </Button>
+                                                    )}
+                                                    {(hasAdmin || hasEdit) && activeTab === 'liberados' && (
+                                                        <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRevertLiberty(d.id, d.name); }} title="Reverter para Preventivo">
+                                                            <RotateCcw size={16} className="text-amber-600" />
+                                                        </Button>
+                                                    )}
                                                     {(hasAdmin || hasEdit) && (
                                                         <Button variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEdit(d); }} title="Editar">
                                                             <Edit size={16} className="text-blue-600" />
