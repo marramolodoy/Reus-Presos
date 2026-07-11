@@ -109,6 +109,7 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
                 <option value="Preventiva">Preventiva</option>
                 <option value="Temporária">Temporária</option>
                 <option value="Domiciliar">Domiciliar</option>
+                <option value="Recurso">Recurso (RESE)</option>
                 <option value="Provisória">Provisória (Execução)</option>
                 <option value="Definitiva">Definitiva</option>
                 <option value="Cível">Cível</option>

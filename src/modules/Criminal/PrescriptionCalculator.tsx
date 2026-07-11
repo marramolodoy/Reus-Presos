@@ -310,6 +310,7 @@ export const PrescriptionCalculator: React.FC<{ session: any }> = ({ session }) 
                 case_number: data.caseNumber, 
                 penal_type: data.infracao,
                 suspension_date: data.dataSuspensao,
+                suspension_end_date: report.dataFimSuspensao,
                 prescription_date: report.dataConsumacao366,
                 obs: data.novoEndereco ? `Novo endereço pelo MP: ${data.novoEndereco}` : 'Gerado via Calculadora',
                 user_id: teamOwnerId || session?.user?.id,

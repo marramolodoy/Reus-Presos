@@ -45,9 +45,15 @@ export const useExpiredDeadlines = (session: any, unitId?: string) => {
                     const daysSinceMovement = calculateDaysDiff(d.last_movement_date);
                     const prazo = d.deadline || 0;
 
+                    // Completely exclude Preventivos and Recurso tabs from expired deadlines alerts
+                    const isPreventiveOrRecurso = !d.prison_type || ['Preventiva', 'Temporária', 'Recurso'].includes(d.prison_type);
+                    if (isPreventiveOrRecurso) return;
+
+                    const excludeFromReview = ['Provisória', 'Definitiva', 'Cível', 'Civil', 'Liberdade Provisória'].includes(d.prison_type);
+
                     let overdue = 0;
                     let expiredCause = '';
-                    if (daysSinceReview > THRESHOLD_REVIEW) {
+                    if (!excludeFromReview && daysSinceReview > THRESHOLD_REVIEW) {
                         overdue = daysSinceReview - THRESHOLD_REVIEW;
                         expiredCause = 'Reavaliação de Prisão';
                     } else if (daysSinceMovement > prazo) {
@@ -59,8 +65,10 @@ export const useExpiredDeadlines = (session: any, unitId?: string) => {
                         let location = 'Réus Presos';
                         let tab = 'preventive';
                         if (d.prison_type === 'Domiciliar') { location = 'Prisão Domiciliar'; tab = 'home_arrest'; }
+                        else if (d.prison_type === 'Recurso') { location = 'Recurso (RESE)'; tab = 'recurso'; }
                         else if (d.prison_type === 'Provisória' || d.prison_type === 'Definitiva') { location = 'Provisória/Definitiva'; tab = 'provisional_definitive'; }
-                        else if (d.prison_type === 'Civil') { location = 'Prisão Civil'; tab = 'civil'; }
+                        else if (d.prison_type === 'Cível' || d.prison_type === 'Civil') { location = 'Prisão Civil'; tab = 'civil'; }
+                        else if (d.prison_type === 'Liberdade Provisória') { location = 'Liberdade Provisória'; tab = 'provisional_liberty'; }
 
                         newExpiredItems.push({
                             id: d.id,

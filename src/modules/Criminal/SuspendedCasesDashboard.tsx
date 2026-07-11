@@ -18,9 +18,44 @@ export const SuspendedCasesDashboard: React.FC<SuspendedCasesDashboardProps> = (
     
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [maxPenaltyYears, setMaxPenaltyYears] = useState<number | ''>('');
     const [formData, setFormData] = useState<SuspendedCaseFormData>({
-        name: '', case_number: '', penal_type: '', suspension_date: '', prescription_date: '', obs: ''
+        name: '', case_number: '', penal_type: '', suspension_date: '', suspension_end_date: '', prescription_date: '', obs: ''
     });
+
+    const getPrazo = (anos: number) => {
+        if (!anos || anos === 0) return 0;
+        if (anos > 12) return 20;
+        if (anos > 8) return 16;
+        if (anos > 4) return 12;
+        if (anos > 2) return 8;
+        if (anos >= 1) return 4;
+        return 3;
+    };
+
+    const addYearsToDate = (dStr: string, years: number) => {
+        if (!dStr) return '';
+        const d = new Date(dStr.includes('T') ? dStr : dStr + 'T12:00:00Z');
+        if (isNaN(d.getTime())) return '';
+        const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000;
+        return new Date(d.getTime() + years * MS_PER_YEAR).toISOString().split('T')[0];
+    };
+
+    // Auto calculate dates based on sumula 415
+    useEffect(() => {
+        if (maxPenaltyYears !== '' && formData.suspension_date) {
+            const prazo = getPrazo(Number(maxPenaltyYears));
+            if (prazo > 0) {
+                const fimSuspensao = addYearsToDate(formData.suspension_date, prazo);
+                const prescricao = addYearsToDate(fimSuspensao, prazo);
+                setFormData(p => ({
+                    ...p, 
+                    suspension_end_date: p.suspension_end_date || fimSuspensao,
+                    prescription_date: p.prescription_date || prescricao
+                }));
+            }
+        }
+    }, [maxPenaltyYears, formData.suspension_date]);
 
     const fetchCases = async () => {
         setLoading(true);
@@ -62,7 +97,8 @@ export const SuspendedCasesDashboard: React.FC<SuspendedCasesDashboardProps> = (
             await fetchCases();
             setIsFormOpen(false);
             setEditingId(null);
-            setFormData({ name: '', case_number: '', penal_type: '', suspension_date: '', prescription_date: '', obs: '' });
+            setMaxPenaltyYears('');
+            setFormData({ name: '', case_number: '', penal_type: '', suspension_date: '', suspension_end_date: '', prescription_date: '', obs: '' });
         } catch (error: any) {
             alert('Erro ao salvar: ' + error.message);
         }
@@ -71,9 +107,10 @@ export const SuspendedCasesDashboard: React.FC<SuspendedCasesDashboardProps> = (
     const handleEdit = (c: SuspendedCase) => {
         setFormData({
             name: c.name, case_number: c.case_number, penal_type: c.penal_type, 
-            suspension_date: c.suspension_date, prescription_date: c.prescription_date, obs: c.obs || ''
+            suspension_date: c.suspension_date, suspension_end_date: c.suspension_end_date || '', prescription_date: c.prescription_date, obs: c.obs || ''
         });
         setEditingId(c.id);
+        setMaxPenaltyYears('');
         setIsFormOpen(true);
     };
 
@@ -104,7 +141,7 @@ export const SuspendedCasesDashboard: React.FC<SuspendedCasesDashboardProps> = (
                     <p className="text-sm text-gray-500">Controle de prescrição para réus não encontrados</p>
                 </div>
                 {hasEdit && (
-                    <Button onClick={() => { setEditingId(null); setFormData({ name: '', case_number: '', penal_type: '', suspension_date: '', prescription_date: '', obs: '' }); setIsFormOpen(true); }} leftIcon={Plus}>
+                    <Button onClick={() => { setEditingId(null); setMaxPenaltyYears(''); setFormData({ name: '', case_number: '', penal_type: '', suspension_date: '', suspension_end_date: '', prescription_date: '', obs: '' }); setIsFormOpen(true); }} leftIcon={Plus}>
                         Novo Registro
                     </Button>
                 )}
@@ -117,6 +154,22 @@ export const SuspendedCasesDashboard: React.FC<SuspendedCasesDashboardProps> = (
                         <button type="button" onClick={() => setIsFormOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="lg:col-span-3 bg-blue-50 border border-blue-200 p-3 rounded flex gap-4 items-center">
+                            <label className="text-sm font-semibold text-blue-900 w-auto">Auto-calcular prazos (Súmula 415/STJ):</label>
+                            <input 
+                                type="number" 
+                                placeholder="Pena Máxima (Anos)" 
+                                value={maxPenaltyYears} 
+                                onChange={e => {
+                                    setMaxPenaltyYears(e.target.value === '' ? '' : Number(e.target.value));
+                                    if (e.target.value !== '') {
+                                        setFormData(p => ({...p, suspension_end_date: '', prescription_date: ''}));
+                                    }
+                                }} 
+                                className="w-48 border border-blue-300 rounded p-2 text-sm focus:ring-blue-500" 
+                            />
+                            <span className="text-xs text-blue-700 italic">Ao preencher Pena e Data da Suspensão, os campos abaixo serão gerados automaticamente.</span>
+                        </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Nome do Réu *</label>
                             <input required type="text" value={formData.name} onChange={e => setFormData(p => ({...p, name: e.target.value}))} className="w-full border rounded p-2 text-sm" />
@@ -132,6 +185,10 @@ export const SuspendedCasesDashboard: React.FC<SuspendedCasesDashboardProps> = (
                         <div>
                             <label className="block text-xs font-medium text-gray-700 mb-1">Data da Suspensão</label>
                             <input required type="date" value={formData.suspension_date} onChange={e => setFormData(p => ({...p, suspension_date: e.target.value}))} className="w-full border rounded p-2 text-sm" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-orange-600 mb-1">Data do Fim da Suspensão</label>
+                            <input type="date" value={formData.suspension_end_date || ''} onChange={e => setFormData(p => ({...p, suspension_end_date: e.target.value}))} className="w-full border rounded p-2 text-sm border-orange-200 bg-orange-50" />
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-red-600 mb-1">Data que Prescreve (Calculada)</label>
@@ -155,6 +212,7 @@ export const SuspendedCasesDashboard: React.FC<SuspendedCasesDashboardProps> = (
                         <tr>
                             <th className="px-4 py-3">Réu / Processo</th>
                             <th className="px-4 py-3">Suspensão (Art 366)</th>
+                            <th className="px-4 py-3">Fim Suspensão</th>
                             <th className="px-4 py-3">Data Prescrição</th>
                             <th className="px-4 py-3">Status</th>
                             <th className="px-4 py-3">Obs/Endereços encontrados</th>
@@ -174,6 +232,7 @@ export const SuspendedCasesDashboard: React.FC<SuspendedCasesDashboardProps> = (
                                         <span className="text-[10px] bg-gray-100 px-1 rounded">{c.penal_type}</span>
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap">{formatDate(c.suspension_date)}</td>
+                                    <td className="px-4 py-3 font-semibold text-orange-700 whitespace-nowrap">{formatDate(c.suspension_end_date) || '-'}</td>
                                     <td className="px-4 py-3 font-bold whitespace-nowrap">{formatDate(c.prescription_date)}</td>
                                     <td className="px-4 py-3">
                                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border border-transparent ${status.color}`}>

@@ -57,7 +57,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
     const [editingId, setEditingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'provisional_definitive' | 'civil' | 'liberados' | 'dashboard' | 'calculator' | 'dosimetry_calculator' | 'suspended'>('preventive');
+    const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'recurso' | 'provisional_definitive' | 'civil' | 'liberados' | 'dashboard' | 'calculator' | 'dosimetry_calculator' | 'suspended'>('preventive');
 
     // Sorting
     type SortOption = 'no_review_asc' | 'imprisonment_asc' | 'no_movement_asc' | 'name_asc';
@@ -214,6 +214,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
         if (activeTab === 'preventive') {
             matchesTab = d.prisonType === 'Preventiva' || d.prisonType === 'Temporária' || !d.prisonType;
         } else if (activeTab === 'home_arrest') matchesTab = d.prisonType === 'Domiciliar';
+        else if (activeTab === 'recurso') matchesTab = d.prisonType === 'Recurso';
         else if (activeTab === 'provisional_definitive') matchesTab = d.prisonType === 'Provisória' || d.prisonType === 'Definitiva';
         else if (activeTab === 'civil') matchesTab = d.prisonType === 'Cível';
         else if (activeTab === 'liberados') matchesTab = d.prisonType === 'Liberdade Provisória';
@@ -239,7 +240,8 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
     const stats: DashboardStats = useMemo(() => {
         let expiredReviews = 0; let longImprisonment = 0; let stalledCases = 0;
         filteredDefendants.forEach(d => {
-            if (calculateDaysDiff(d.lastReviewDate) > THRESHOLD_REVIEW) expiredReviews++;
+            const excludeFromReview = ['Preventiva', 'Temporária', 'Recurso', 'Provisória', 'Definitiva', 'Cível', 'Civil', 'Liberdade Provisória'].includes(d.prisonType) || !d.prisonType;
+            if (!excludeFromReview && calculateDaysDiff(d.lastReviewDate) > THRESHOLD_REVIEW) expiredReviews++;
             if (calculateDaysDiff(d.arrestDate) > THRESHOLD_IMPRISONMENT) longImprisonment++;
             if (calculateDaysDiff(d.lastMovementDate) > d.deadline) stalledCases++;
         });
@@ -276,8 +278,20 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
 
     const generatePDF = () => {
         try {
+            const tabNames: Record<string, string> = {
+                preventive: 'Preventivos',
+                home_arrest: 'Domiciliar',
+                recurso: 'Recurso (RESE)',
+                provisional_definitive: 'Prov./Definitivo',
+                civil: 'Cíveis',
+                liberados: 'Liberdade Provisória',
+                dashboard: 'Painel Gráfico',
+                calculator: 'Calc. Prescricional',
+                dosimetry_calculator: 'Calc. Dosimetria',
+                suspended: 'Suspensos'
+            };
             const doc = new jsPDF('p', 'mm', 'a4');
-            doc.setFontSize(14); doc.setTextColor(40); doc.text(`Relatório - ${activeTab}`, 14, 15);
+            doc.setFontSize(14); doc.setTextColor(40); doc.text(`Relatório - ${tabNames[activeTab] || activeTab}`, 14, 15);
             const rows = filteredDefendants.map(d => [
                 d.name,
                 `${d.caseNumber}\n${d.rji ? `RJI: ${d.rji}` : ''}\n${d.infopen ? `INFOPEN: ${d.infopen}` : ''}`,
@@ -325,6 +339,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
             <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-2 flex overflow-x-auto space-x-4">
                 <button onClick={() => setActiveTab('preventive')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'preventive' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Preventivos</button>
                 <button onClick={() => setActiveTab('home_arrest')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'home_arrest' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Domiciliar</button>
+                <button onClick={() => setActiveTab('recurso')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'recurso' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Recurso (RESE)</button>
                 <button onClick={() => setActiveTab('provisional_definitive')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'provisional_definitive' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Prov./Definitivo</button>
                 <button onClick={() => setActiveTab('civil')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'civil' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Cíveis</button>
                 <button onClick={() => setActiveTab('liberados')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'liberados' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Lib. Provisória</button>
@@ -427,7 +442,12 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                                 <div className="text-xs text-gray-400">{formatDate(d.arrestDate)}</div>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <div className={calculateDaysDiff(d.lastReviewDate) > THRESHOLD_REVIEW ? 'text-red-600 font-bold' : ''}>{calculateDaysDiff(d.lastReviewDate)} dias atrás</div>
+                                                <div className={
+                                                    !(['Preventiva', 'Temporária', 'Recurso', 'Provisória', 'Definitiva', 'Cível', 'Civil', 'Liberdade Provisória'].includes(d.prisonType) || !d.prisonType) &&
+                                                    calculateDaysDiff(d.lastReviewDate) > THRESHOLD_REVIEW
+                                                        ? 'text-red-600 font-bold'
+                                                        : ''
+                                                }>{calculateDaysDiff(d.lastReviewDate)} dias atrás</div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div>{d.movementType}</div>

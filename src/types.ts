@@ -3,7 +3,7 @@ export interface Defendant {
   name: string; // Réu
   caseNumber: string; // Processo
   penalType: string; // Tipo penal
-  prisonType: 'Preventiva' | 'Temporária' | 'Provisória' | 'Definitiva' | 'Cível' | 'Domiciliar' | 'Liberdade Provisória'; // Tipo de Prisão
+  prisonType: 'Preventiva' | 'Temporária' | 'Provisória' | 'Definitiva' | 'Cível' | 'Domiciliar' | 'Liberdade Provisória' | 'Recurso'; // Tipo de Prisão
   arrestDate: string; // Data da última prisão (YYYY-MM-DD)
   lastReviewDate: string; // Data da última revisão (YYYY-MM-DD)
   movementType: string; // Tipo de Movimentação
@@ -244,6 +244,7 @@ export interface SuspendedCase {
   case_number: string;
   penal_type: string;
   suspension_date: string;
+  suspension_end_date?: string;
   prescription_date: string;
   obs?: string;
   user_id: string;
