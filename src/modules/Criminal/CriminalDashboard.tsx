@@ -117,7 +117,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
             movement_type: data.movementType, last_movement_date: data.lastMovementDate,
             deadline: data.deadline, obs: data.obs, rji: data.rji, bnmp: data.bnmp,
             infopen: data.infopen, prison: data.prison,
-            has_hearing: data.hasHearing, hearing_date: data.hearingDate || null, linked_defendant_ids: data.linkedDefendantIds
+            has_hearing: data.hasHearing, hearing_date: data.hasHearing ? (data.hearingDate || null) : null, linked_defendant_ids: data.linkedDefendantIds
         };
 
         if (editingId) {
@@ -253,7 +253,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
         // I will implement fully below to avoid user regression.
         try {
             const headers = ['Nome', 'Processo', 'Tipo Penal', 'Prisão', 'Tipo Prisão', 'Revisão', 'Movimentação', 'Data Mov.', 'Prazo', 'Presídio', 'Tem Audiência?', 'Data Audiência', 'OBS'];
-            const rows = sortedDefendants.map(d => [d.name, d.caseNumber, d.penalType, formatDate(d.arrestDate), d.prisonType, formatDate(d.lastReviewDate), d.movementType, formatDate(d.lastMovementDate), d.deadline, d.prison, d.hasHearing ? 'Sim' : 'Não', d.hearingDate ? new Date(d.hearingDate).toLocaleString('pt-BR') : '-', d.obs || '']);
+            const rows = sortedDefendants.map(d => [d.name, d.caseNumber, d.penalType, formatDate(d.arrestDate), d.prisonType, formatDate(d.lastReviewDate), d.movementType, formatDate(d.lastMovementDate), d.deadline, d.prison, d.hasHearing ? 'Sim' : 'Não', d.hasHearing && d.hearingDate ? new Date(d.hearingDate).toLocaleString('pt-BR') : '-', d.obs || '']);
             const csvContent = [headers.join(';'), ...rows.map(row => row.map(f => String(f || '').includes(';') ? `"${f}"` : f).join(';'))].join('\n');
             const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }));
             link.download = `relatorio_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
@@ -435,7 +435,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                                                 <span className="text-[10px] bg-gray-100 px-1 rounded">{d.penalType}</span>
                                             </td>
                                             <td className="px-4 py-3">
-                                                {d.hearingDate ? <div className={calculateDaysUntil(d.hearingDate) > 0 ? 'text-green-600' : 'text-red-500'}>{new Date(d.hearingDate).toLocaleDateString('pt-BR')}</div> : '-'}
+                                                {d.hasHearing && d.hearingDate ? <div className={calculateDaysUntil(d.hearingDate) > 0 ? 'text-green-600' : 'text-red-500'}>{new Date(d.hearingDate).toLocaleDateString('pt-BR')}</div> : '-'}
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div>{calculateDaysDiff(d.arrestDate)} dias</div>

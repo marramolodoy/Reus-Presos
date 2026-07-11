@@ -47,7 +47,13 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
 
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
+      setFormData(prev => {
+        const next = { ...prev, [name]: checked };
+        if (name === 'hasHearing' && !checked) {
+          next.hearingDate = '';
+        }
+        return next;
+      });
       return;
     }
 
