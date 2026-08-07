@@ -57,7 +57,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
     const [editingId, setEditingId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'recurso' | 'provisional_definitive' | 'civil' | 'liberados' | 'dashboard' | 'calculator' | 'dosimetry_calculator' | 'suspended'>('preventive');
+    const [activeTab, setActiveTab] = useState<'preventive' | 'home_arrest' | 'recurso' | 'provisional_definitive' | 'civil' | 'liberados' | 'garantias' | 'dashboard' | 'calculator' | 'dosimetry_calculator' | 'suspended'>('preventive');
 
     // Sorting
     type SortOption = 'no_review_asc' | 'imprisonment_asc' | 'no_movement_asc' | 'name_asc';
@@ -218,6 +218,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
         else if (activeTab === 'provisional_definitive') matchesTab = d.prisonType === 'Provisória' || d.prisonType === 'Definitiva';
         else if (activeTab === 'civil') matchesTab = d.prisonType === 'Cível';
         else if (activeTab === 'liberados') matchesTab = d.prisonType === 'Liberdade Provisória';
+        else if (activeTab === 'garantias') matchesTab = d.prisonType === 'Juiz das Garantias';
         return matchesSearch && matchesTab;
     });
 
@@ -285,6 +286,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                 provisional_definitive: 'Prov./Definitivo',
                 civil: 'Cíveis',
                 liberados: 'Liberdade Provisória',
+                garantias: 'Juiz das Garantias',
                 dashboard: 'Painel Gráfico',
                 calculator: 'Calc. Prescricional',
                 dosimetry_calculator: 'Calc. Dosimetria',
@@ -329,6 +331,17 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
             {isFormOpen && (
                 <DefendantForm
                     initialData={editingId ? defendants.find(d => d.id === editingId) : undefined}
+                    defaultPrisonType={(() => {
+                        switch (activeTab) {
+                            case 'home_arrest': return 'Domiciliar';
+                            case 'recurso': return 'Recurso';
+                            case 'provisional_definitive': return 'Provisória';
+                            case 'civil': return 'Cível';
+                            case 'liberados': return 'Liberdade Provisória';
+                            case 'garantias': return 'Juiz das Garantias';
+                            default: return 'Preventiva';
+                        }
+                    })()}
                     defendants={defendants}
                     onSubmit={handleSave}
                     onCancel={() => { setIsFormOpen(false); setEditingId(null); }}
@@ -343,6 +356,7 @@ export const CriminalDashboard: React.FC<CriminalDashboardProps> = ({ session, c
                 <button onClick={() => setActiveTab('provisional_definitive')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'provisional_definitive' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Prov./Definitivo</button>
                 <button onClick={() => setActiveTab('civil')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'civil' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Cíveis</button>
                 <button onClick={() => setActiveTab('liberados')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'liberados' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Lib. Provisória</button>
+                <button onClick={() => setActiveTab('garantias')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'garantias' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Juiz das Garantias</button>
                 <button onClick={() => setActiveTab('dashboard')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'dashboard' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Painel Gráfico</button>
                 <button onClick={() => setActiveTab('calculator')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'calculator' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Calc. Prescricional</button>
                 <button onClick={() => setActiveTab('dosimetry_calculator')} className={`pb-2 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === 'dosimetry_calculator' ? 'border-justice-600 text-justice-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>Calc. Dosimetria</button>

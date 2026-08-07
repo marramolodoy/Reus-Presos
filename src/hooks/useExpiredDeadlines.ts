@@ -69,6 +69,7 @@ export const useExpiredDeadlines = (session: any, unitId?: string) => {
                         else if (d.prison_type === 'Provisória' || d.prison_type === 'Definitiva') { location = 'Provisória/Definitiva'; tab = 'provisional_definitive'; }
                         else if (d.prison_type === 'Cível' || d.prison_type === 'Civil') { location = 'Prisão Civil'; tab = 'civil'; }
                         else if (d.prison_type === 'Liberdade Provisória') { location = 'Liberdade Provisória'; tab = 'provisional_liberty'; }
+                        else if (d.prison_type === 'Juiz das Garantias') { location = 'Juiz das Garantias'; tab = 'garantias'; }
 
                         newExpiredItems.push({
                             id: d.id,

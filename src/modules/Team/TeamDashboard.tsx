@@ -203,14 +203,33 @@ export const TeamDashboard: React.FC<TeamDashboardProps> = ({ session }) => {
     const handleRemoveMember = async (userId: string, email: string) => {
         if (!confirm(`Remover acessos de ${email}?`)) return;
 
-        const { error } = await supabase.rpc('remove_team_member', {
-            target_id: userId
-        });
+        setError(null);
+        setSuccess(null);
 
-        if (error) {
-            alert('Erro ao remover: ' + error.message);
-        } else {
-            fetchTeam();
+        try {
+            const { data, error } = await supabase.rpc('remove_team_member', {
+                target_id: userId
+            });
+
+            if (error) {
+                // Fallback: Tenta deletar diretamente na tabela user_roles
+                const { error: deleteError } = await supabase
+                    .from('user_roles')
+                    .delete()
+                    .eq('user_id', userId);
+
+                if (deleteError) {
+                    throw new Error(deleteError.message);
+                }
+            } else if (data && typeof data === 'object' && data.success === false) {
+                throw new Error(data.message || 'Erro ao remover membro da equipe.');
+            }
+
+            setSuccess(`Membro ${email} removido com sucesso.`);
+            await fetchTeam();
+        } catch (err: any) {
+            console.error('Error removing team member:', err);
+            setError('Erro ao remover: ' + (err.message || 'Erro desconhecido.'));
         }
     };
 

@@ -12,7 +12,7 @@ export interface ExportConfig {
     sortBy: 'name' | 'prison_type' | 'prison';
 }
 
-const PRISON_TYPES = ['Preventiva', 'Temporária', 'Domiciliar', 'Recurso', 'Provisória', 'Definitiva', 'Cível'];
+const PRISON_TYPES = ['Preventiva', 'Temporária', 'Domiciliar', 'Recurso', 'Provisória', 'Definitiva', 'Cível', 'Juiz das Garantias'];
 
 export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
     const [selectedTypes, setSelectedTypes] = useState<string[]>(PRISON_TYPES);

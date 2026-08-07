@@ -6,6 +6,7 @@ import { Button } from './ui/Button';
 
 interface Props {
   initialData?: Defendant;
+  defaultPrisonType?: Defendant['prisonType'];
   defendants?: Defendant[]; // Lista de réus para linkagem
   onSubmit: (data: DefendantFormData) => void;
   onCancel: () => void;
@@ -31,16 +32,24 @@ const emptyForm: DefendantFormData = {
   linkedDefendantIds: []
 };
 
-export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState<DefendantFormData>(emptyForm);
+export const DefendantForm: React.FC<Props> = ({ initialData, defaultPrisonType, defendants = [], onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState<DefendantFormData>(() => ({
+    ...emptyForm,
+    prisonType: defaultPrisonType || 'Preventiva'
+  }));
   const [linkSearchTerm, setLinkSearchTerm] = useState('');
 
   useEffect(() => {
     if (initialData) {
       const { id, ...rest } = initialData;
       setFormData(rest);
+    } else {
+      setFormData({
+        ...emptyForm,
+        prisonType: defaultPrisonType || 'Preventiva'
+      });
     }
-  }, [initialData]);
+  }, [initialData, defaultPrisonType]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -120,6 +129,7 @@ export const DefendantForm: React.FC<Props> = ({ initialData, defendants = [], o
                 <option value="Definitiva">Definitiva</option>
                 <option value="Cível">Cível</option>
                 <option value="Liberdade Provisória">Liberdade Provisória (Solto)</option>
+                <option value="Juiz das Garantias">Juiz das Garantias</option>
               </select>
             </div>
 
